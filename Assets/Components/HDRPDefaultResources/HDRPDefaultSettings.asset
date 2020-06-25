@@ -113,7 +113,6 @@ MonoBehaviour:
   - {fileID: 5315503232242033309}
   - {fileID: 1932259527246508038}
   - {fileID: -7089757308646879465}
-  - {fileID: 5244477476073612635}
 --- !u!114 &1932259527246508038
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -137,35 +136,6 @@ MonoBehaviour:
   fogType:
     m_OverrideState: 0
     m_Value: 0
---- !u!114 &5244477476073612635
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
-  m_Name: Bloom
-  m_EditorClassIdentifier: 
-  active: 1
-  m_AdvancedMode: 0
-  curve:
-    m_OverrideState: 1
-    m_Value: 1
-    min: 1
-    max: 32
-  quality:
-    m_OverrideState: 1
-    m_Value: 1
-    min: 1
-    max: 20
-  radius:
-    m_OverrideState: 1
-    m_Value: 1
-    min: 1
-    max: 100
 --- !u!114 &5315503232242033309
 MonoBehaviour:
   m_ObjectHideFlags: 3

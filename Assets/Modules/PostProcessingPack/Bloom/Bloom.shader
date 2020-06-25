@@ -50,30 +50,37 @@ Shader "Hidden/Shader/Bloom"
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
 		float2 positionSS = input.texcoord * _ScreenSize.xy;
-        float3 outColor = float3(0, 0, 0);//LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
-        float totalWeight = 0;
+        float3 outColor;
+        outColor = float3(0, 0, 0);
+        outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+        float totalWeight = 1;
 
-		//for(int i = _Steps; i <= _Steps; i++)
-		//{
-        	float x = (random(positionSS) - 0.5) * 2 * _Radius;
-        	x *= lerp(1, -1, step(_ScreenSize.x, positionSS.x + x));
-        	x *= lerp(-1, 1, step(0, positionSS.x + x));
-        	float y = ((random(positionSS + 0.1.xx) - 0.5) * 2 * _Radius);
-        	y *= lerp(1, -1, step(_ScreenSize.y, + positionSS.y + y));
-        	y *= lerp(-1, 1, step(0, positionSS.y + y));
-			float2 scatterPos = uint2(positionSS.x + x, positionSS.y + y);
+		for(int i = 1; i <= _Steps; i++)
+		{
+        	float x = (random(positionSS * i.xx) - 0.5) * 2 * _Radius;
+        	//x *= lerp(1, -1, step(_ScreenSize.x, positionSS.x + x));
+        	//x *= lerp(-1, 1, step(0, positionSS.x + x));
+        	float y = ((random(positionSS * i.xx + 0.1.xx) - 0.5) * 2 * _Radius);
+        	//y *= lerp(1, -1, step(_ScreenSize.y, + positionSS.y + y));
+        	//y *= lerp(-1, 1, step(0, positionSS.y + y));
+
+        	float posX = positionSS.x + x;
+        	float posY = positionSS.y + y;
+
+			float2 scatterPos = uint2(posX, posY);
 
 			float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, scatterPos).xyz;
 
 			float br = pow(saturate(Max3(neighborColor.x, neighborColor.y, neighborColor.z)), _Curve);
-			//float distance = sqrt(x*x + y*y);
-			//float weight = saturate(1 - distance / 1);
-			float weight = 1;
+			float distance = sqrt(x*x + y*y);
+			float weight;
+			weight = 1 - distance / _Radius;
+			weight = pow(weight, 8);
 	        
-	        outColor += neighborColor * weight * br;
+	        outColor += saturate((neighborColor) * br * weight);
 	        totalWeight += weight;
-		//}
-		outColor = outColor / totalWeight;
+		}
+		outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz + (outColor / totalWeight);
 
         return float4(outColor.xyz, 1);
     }
