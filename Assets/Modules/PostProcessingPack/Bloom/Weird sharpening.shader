@@ -1,4 +1,4 @@
-Shader "Hidden/Shader/Bloom"
+﻿Shader "Hidden/Shader/Bloom"
 {
     HLSLINCLUDE
 
@@ -35,9 +35,8 @@ Shader "Hidden/Shader/Bloom"
     }
 
     // List of properties to control your post process effect
-    float _Curve;
-    int _Quality;
-    float _Radius;
+    float _Intensity;
+    float _Steps;
     TEXTURE2D_X(_InputTexture);
 
     float4 HorizontalBlur(Varyings input) : SV_Target
@@ -47,33 +46,25 @@ Shader "Hidden/Shader/Bloom"
 		uint2 positionSS = input.texcoord * _ScreenSize.xy;
         float3 outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
 
-        float steps = _Radius / _Quality;
-        float step = _Radius / steps;
-
         float totalWeight = 1;
-		for(int x = -steps; x <= steps; x++)
+		for(int x = -_Steps; x <= _Steps; x++)
 		{
-			for(int y = -steps; y <= steps; y++)
+			for(int y = -_Steps; y <= _Steps; y++)
 			{
-				float posX = x * step;
-				float posY = y * step;
-				uint2 positionSSleft = uint2(positionSS.x + posX, positionSS.y + posY);
+				//float sig = 0.1;
+				//float weight = exp(-0.5 * i*i * sig*sig) * _Intensity;
+				float weight = (1 - (sqrt(x*x + y*y) / _Steps));
+				//float weight = 1;
 
-				float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, positionSSleft).xyz;
-
-				float lum = pow(saturate(Luminance(neighborColor)), _Curve);
-				//float lum = pow(saturate(Max3(neighborColor.x, neighborColor.y, neighborColor.z)), _Curve);
-				float distance = sqrt(x*x + y*y);
-				//float weight = exp(-0.5 * (x*x + y*y) / (8));
-				float weight = saturate(1 - distance / steps);
-		        
-		        outColor += neighborColor * weight * lum;
+		        uint2 positionSSleft = uint2(positionSS.x + x, positionSS.y + y);
+		        outColor += LOAD_TEXTURE2D_X(_InputTexture, positionSSleft).xyz * weight;
 		        totalWeight += weight;
 			}
 		}
-		outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz + outColor / totalWeight;
+		outColor = outColor / totalWeight;
 
-        return float4(outColor.xyz, 1);
+
+        return float4(outColor, 1);
     }
 
     ENDHLSL

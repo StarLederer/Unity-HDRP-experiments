@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!114 &-5300249867634436085
+--- !u!114 &-4553502905660264374
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -9,16 +9,50 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
+  m_Script: {fileID: 11500000, guid: 24f077503be6ae942a1e1245dbd53ea9, type: 3}
   m_Name: Bloom
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
+  quality:
+    m_OverrideState: 0
+    m_Value: 1
+  threshold:
+    m_OverrideState: 1
+    m_Value: 1.2
+    min: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
     min: 0
     max: 1
+  scatter:
+    m_OverrideState: 1
+    m_Value: 1
+    min: 0
+    max: 1
+  tint:
+    m_OverrideState: 0
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
+    hdr: 0
+    showAlpha: 0
+    showEyeDropper: 1
+  dirtTexture:
+    m_OverrideState: 0
+    m_Value: {fileID: 0}
+  dirtIntensity:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+  anamorphic:
+    m_OverrideState: 0
+    m_Value: 1
+  m_Resolution:
+    m_OverrideState: 0
+    m_Value: 2
+  m_HighQualityFiltering:
+    m_OverrideState: 0
+    m_Value: 1
 --- !u!114 &-2109818796249167647
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -41,7 +75,7 @@ MonoBehaviour:
     m_Value: {fileID: 0}
   intensity:
     m_OverrideState: 1
-    m_Value: 0.05
+    m_Value: 0.006
     min: 0
     max: 1
   m_MaxSamples:
@@ -62,10 +96,40 @@ MonoBehaviour:
   m_Name: SampleScenePostProcessingSettings
   m_EditorClassIdentifier: 
   components:
-  - {fileID: 8711377374188185572}
   - {fileID: 6640133647794636954}
+  - {fileID: 8711377374188185572}
+  - {fileID: 1446213909545652174}
+  - {fileID: -4553502905660264374}
   - {fileID: -2109818796249167647}
-  - {fileID: -5300249867634436085}
+--- !u!114 &1446213909545652174
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
+  m_Name: Bloom
+  m_EditorClassIdentifier: 
+  active: 0
+  m_AdvancedMode: 0
+  curve:
+    m_OverrideState: 1
+    m_Value: 32
+    min: 1
+    max: 32
+  quality:
+    m_OverrideState: 1
+    m_Value: 2
+    min: 1
+    max: 20
+  radius:
+    m_OverrideState: 1
+    m_Value: 50
+    min: 1
+    max: 100
 --- !u!114 &6640133647794636954
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -91,16 +155,16 @@ MonoBehaviour:
     m_Value: 1
   fixedExposure:
     m_OverrideState: 1
-    m_Value: 8.5
+    m_Value: 12
   compensation:
     m_OverrideState: 0
     m_Value: 0
   limitMin:
-    m_OverrideState: 0
-    m_Value: -10
+    m_OverrideState: 1
+    m_Value: 10
   limitMax:
     m_OverrideState: 1
-    m_Value: 8.5
+    m_Value: 12
   curveMap:
     m_OverrideState: 0
     m_Value:
