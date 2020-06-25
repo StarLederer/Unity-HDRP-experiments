@@ -51,27 +51,29 @@ Shader "Hidden/Shader/Bloom"
 
 		float2 positionSS = input.texcoord * _ScreenSize.xy;
         float3 outColor = float3(0, 0, 0);//LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+        float totalWeight = 0;
 
-        float totalWeight = 1;
 		//for(int i = _Steps; i <= _Steps; i++)
 		//{
         	float x = (random(positionSS) - 0.5) * 2 * _Radius;
         	x *= lerp(1, -1, step(_ScreenSize.x, positionSS.x + x));
+        	x *= lerp(-1, 1, step(0, positionSS.x + x));
         	float y = ((random(positionSS + 0.1.xx) - 0.5) * 2 * _Radius);
         	y *= lerp(1, -1, step(_ScreenSize.y, + positionSS.y + y));
+        	y *= lerp(-1, 1, step(0, positionSS.y + y));
 			float2 scatterPos = uint2(positionSS.x + x, positionSS.y + y);
 
 			float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, scatterPos).xyz;
 
 			float br = pow(saturate(Max3(neighborColor.x, neighborColor.y, neighborColor.z)), _Curve);
-			float distance = sqrt(x*x + y*y);
-			//float weight = saturate(1 - distance / _Steps);
+			//float distance = sqrt(x*x + y*y);
+			//float weight = saturate(1 - distance / 1);
 			float weight = 1;
 	        
-	        outColor = neighborColor * weight * br;
-	        //totalWeight += weight;
+	        outColor += neighborColor * weight * br;
+	        totalWeight += weight;
 		//}
-		//outColor = outColor / totalWeight;
+		outColor = outColor / totalWeight;
 
         return float4(outColor.xyz, 1);
     }
