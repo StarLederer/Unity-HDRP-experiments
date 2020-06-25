@@ -36,42 +36,42 @@ Shader "Hidden/Shader/Bloom"
 
     // List of properties to control your post process effect
     float _Curve;
-    int _Steps;
+    int _Quality;
     float _Radius;
     TEXTURE2D_X(_InputTexture);
-
-	float random(float2 uv)
-	{
-		return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453123);
-	}
 
     float4 HorizontalBlur(Varyings input) : SV_Target
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-		float2 positionSS = input.texcoord * _ScreenSize.xy;
-        float3 outColor = float3(0, 0, 0);//LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+		uint2 positionSS = input.texcoord * _ScreenSize.xy;
+        float3 outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+
+        float steps = _Radius / _Quality;
+        float step = _Radius / steps;
 
         float totalWeight = 1;
-		//for(int i = _Steps; i <= _Steps; i++)
-		//{
-        	float x = (random(positionSS) - 0.5) * 2 * _Radius;
-        	x *= lerp(1, -1, step(_ScreenSize.x, positionSS.x + x));
-        	float y = ((random(positionSS + 0.1.xx) - 0.5) * 2 * _Radius);
-        	y *= lerp(1, -1, step(_ScreenSize.y, + positionSS.y + y));
-			float2 scatterPos = uint2(positionSS.x + x, positionSS.y + y);
+		for(int x = -steps; x <= steps; x++)
+		{
+			for(int y = -steps; y <= steps; y++)
+			{
+				float posX = x * step;
+				float posY = y * step;
+				uint2 positionSSleft = uint2(positionSS.x + posX, positionSS.y + posY);
 
-			float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, scatterPos).xyz;
+				float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, positionSSleft).xyz;
 
-			float br = pow(saturate(Max3(neighborColor.x, neighborColor.y, neighborColor.z)), _Curve);
-			float distance = sqrt(x*x + y*y);
-			//float weight = saturate(1 - distance / _Steps);
-			float weight = 1;
-	        
-	        outColor = neighborColor * weight * br;
-	        //totalWeight += weight;
-		//}
-		//outColor = outColor / totalWeight;
+				float lum = pow(saturate(Luminance(neighborColor)), _Curve);
+				//float lum = pow(saturate(Max3(neighborColor.x, neighborColor.y, neighborColor.z)), _Curve);
+				float distance = sqrt(x*x + y*y);
+				//float weight = exp(-0.5 * (x*x + y*y) / (8));
+				float weight = saturate(1 - distance / steps);
+		        
+		        outColor += neighborColor * weight * lum;
+		        totalWeight += weight;
+			}
+		}
+		outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz + outColor / totalWeight;
 
         return float4(outColor.xyz, 1);
     }

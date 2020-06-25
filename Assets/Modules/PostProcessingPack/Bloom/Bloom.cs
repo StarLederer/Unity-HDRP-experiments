@@ -8,8 +8,8 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 {
     [Tooltip("Controls the intensity of the effect.")]
     public ClampedFloatParameter curve = new ClampedFloatParameter(0f, 1f, 32f);
-    public ClampedIntParameter quality = new ClampedIntParameter(1, 1, 20);
-    public ClampedFloatParameter radius = new ClampedFloatParameter(50f, 1f, 100f);
+    public ClampedIntParameter steps = new ClampedIntParameter(1, 1, 60);
+    public ClampedFloatParameter radius = new ClampedFloatParameter(50f, 1f, 800f);
 
     Material m_Material;
 
@@ -34,7 +34,7 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
             return;
 
         m_Material.SetFloat("_Curve", curve.value);
-        m_Material.SetInt("_Quality", quality.value);
+        m_Material.SetInt("_Steps", steps.value);
         m_Material.SetFloat("_Radius", radius.value);
         m_Material.SetTexture("_InputTexture", source);
         HDUtils.DrawFullScreen(cmd, m_Material, destination);
