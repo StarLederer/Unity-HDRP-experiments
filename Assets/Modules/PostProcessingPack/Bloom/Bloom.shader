@@ -34,17 +34,25 @@ Shader "Hidden/Shader/Bloom"
         return output;
     }
 
+    //
+    //
     // List of properties to control your post process effect
     float _Curve;
     int _Steps;
     float _Radius;
     TEXTURE2D_X(_InputTexture);
 
+    //
+    //
+    // Functions
 	float random(float2 uv)
 	{
 		return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453123);
 	}
 
+	//
+	//
+	// Post process fragment shader
     float4 HorizontalBlur(Varyings input) : SV_Target
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
@@ -52,8 +60,8 @@ Shader "Hidden/Shader/Bloom"
 		float2 positionSS = input.texcoord * _ScreenSize.xy;
         float3 outColor;
         outColor = float3(0, 0, 0);
-        outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
-        float totalWeight = 1;
+        //outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+        float totalWeight = 0;
 
 		for(int i = 1; i <= _Steps; i++)
 		{
@@ -69,7 +77,10 @@ Shader "Hidden/Shader/Bloom"
 
 			float2 scatterPos = uint2(posX, posY);
 
+			//_InputTexture[COORD_TEXTURE2D_X(float2(posX, posY))] = 0.xxxx;
 			float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, scatterPos).xyz;
+			neighborColor *= lerp(0, 1, step(0, posX));
+			neighborColor *= lerp(0, 1, step(0, posY));
 
 			float br = pow(saturate(Max3(neighborColor.x, neighborColor.y, neighborColor.z)), _Curve);
 			float distance = sqrt(x*x + y*y);
@@ -80,7 +91,7 @@ Shader "Hidden/Shader/Bloom"
 	        outColor += saturate((neighborColor) * br * weight);
 	        totalWeight += weight;
 		}
-		outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz + (outColor / totalWeight);
+		outColor = (outColor / totalWeight);
 
         return float4(outColor.xyz, 1);
     }
