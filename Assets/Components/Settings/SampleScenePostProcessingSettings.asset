@@ -12,14 +12,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24f077503be6ae942a1e1245dbd53ea9, type: 3}
   m_Name: Bloom
   m_EditorClassIdentifier: 
-  active: 1
-  m_AdvancedMode: 0
+  active: 0
+  m_AdvancedMode: 1
   quality:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 3
   threshold:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 1
     min: 0
   intensity:
     m_OverrideState: 1
@@ -48,11 +48,11 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 1
   m_Resolution:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 2
   m_HighQualityFiltering:
-    m_OverrideState: 0
-    m_Value: 1
+    m_OverrideState: 1
+    m_Value: 0
 --- !u!114 &-2109818796249167647
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -65,7 +65,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 598e2d32e2c7b0c418e030c3236d663a, type: 3}
   m_Name: ChromaticAberration
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   m_AdvancedMode: 0
   quality:
     m_OverrideState: 0
@@ -201,7 +201,7 @@ MonoBehaviour:
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
-    m_Value: 0.25
+    m_Value: 0.147
     min: 0
     max: 1
   smoothness:
@@ -237,11 +237,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
   m_Name: Bloom
   m_EditorClassIdentifier: 
-  active: 0
+  active: 1
   m_AdvancedMode: 0
   curve:
     m_OverrideState: 1
-    m_Value: 16
+    m_Value: 1
     min: 1
     max: 32
   steps:
@@ -251,6 +251,6 @@ MonoBehaviour:
     max: 1000
   scatter:
     m_OverrideState: 1
-    m_Value: 702
+    m_Value: 109
     min: 0
     max: 800

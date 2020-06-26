@@ -6,6 +6,7 @@
 #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
 
 #pragma kernel MyBlurComputeShader
+#pragma kernel FooBar
 
 TEXTURE2D_X(_InputTexture);
 
@@ -70,4 +71,19 @@ void MyBlurComputeShader(uint3 dispatchThreadId : SV_DispatchThreadID)
     output *= all(dispatchThreadId.xy < uint2(_TexelSize.xy));
 
     _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = float3(0, 1, 0);
+}
+
+[numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
+void FooBar(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), _TexelSize.zw, uint2(GROUP_SIZE, GROUP_SIZE));
+
+    float3 outColor = float3(0, 0, 0);
+    uint2 coords = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+    outColor = LOAD_TEXTURE2D_X(_InputTexture, coords).xyz;
+    
+    //outColor.x = 0;
+
+    _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = outColor;
 }
