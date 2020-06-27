@@ -14,11 +14,6 @@ float _BlurStepSize;
 
 SAMPLER(sampler_LinearClamp);
 
-CBUFFER_START(cb0)
-    float4 _TexelSize;
-    float4 _BloomThreshold;
-CBUFFER_END
-
 #define GROUP_SIZE 8
 
 //
@@ -28,7 +23,7 @@ CBUFFER_END
 void Blur(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
-    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), _TexelSize.zw, uint2(GROUP_SIZE, GROUP_SIZE));
+    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
     uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
 
     float3 outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
@@ -46,7 +41,8 @@ void Blur(uint3 dispatchThreadId : SV_DispatchThreadID)
 
 			uint2 blurPos = uint2(posX, posY);
 
-			float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, blurPos).xyz;
+			float3 neighborColor = float3(0, 0, 0);
+			neighborColor += LOAD_TEXTURE2D_X(_InputTexture, blurPos).xyz;
 
 			float distance = sqrt(x*x + y*y);
 			float weight;

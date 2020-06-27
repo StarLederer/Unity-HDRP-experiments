@@ -28,7 +28,7 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 	RTHandle scatterBuffer;
 	RTHandle bloomBuffer;
 
-	public bool IsActive() => m_Material != null && ScatterCompute != null && scatter.value > 0f;
+	public bool IsActive() => intensity.value > 0f;
 
     public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.BeforePostProcess;
 
@@ -109,7 +109,6 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 			m_Targets = new Dictionary<int, Stack<RTHandle>>();
 			m_Tracker = 0;
 			m_HasHWDynamicResolution = false;
-			//RTHandles.Initialize();
 		}
 
 		public void Cleanup()
