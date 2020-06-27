@@ -5,11 +5,9 @@
 
 #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
 
-#pragma kernel MyBlurComputeShader
-#pragma kernel FooBar
+#pragma kernel Blur
 
 TEXTURE2D_X(_InputTexture);
-
 RW_TEXTURE2D_X(float3, _OutputTexture);
 
 SAMPLER(sampler_LinearClamp);
@@ -21,69 +19,43 @@ CBUFFER_END
 
 #define GROUP_SIZE 8
 
+//
+//
+// Blur compute
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
-void MyBlurComputeShader(uint3 dispatchThreadId : SV_DispatchThreadID)
+void Blur(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
     PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), _TexelSize.zw, uint2(GROUP_SIZE, GROUP_SIZE));
-    float2 uv = posInputs.positionNDC;
+    uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
 
-    // Use a rotated grid to minimize artifacts coming from horizontal and vertical boundaries
-    // "High Quality Antialiasing" [Lorach07]
-    const float2 kTaps[] = {
-        float2( 0.0,  0.0),
-        float2( 0.9, -0.4),
-        float2(-0.9,  0.4),
-        float2( 0.4,  0.9),
-        float2(-0.4, -0.9)
-    };
-
-    float3 color0 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(_TexelSize.zw * kTaps[0] + uv, _TexelSize.zw), 0.0).xyz;
-    float3 color1 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(_TexelSize.zw * kTaps[1] + uv, _TexelSize.zw), 0.0).xyz;
-    float3 color2 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(_TexelSize.zw * kTaps[2] + uv, _TexelSize.zw), 0.0).xyz;
-    float3 color3 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(_TexelSize.zw * kTaps[3] + uv, _TexelSize.zw), 0.0).xyz;
-    float3 color4 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(_TexelSize.zw * kTaps[4] + uv, _TexelSize.zw), 0.0).xyz;
-
-    color0 = QuadraticThreshold(color0, _BloomThreshold.x, _BloomThreshold.yzw);
-    color1 = QuadraticThreshold(color1, _BloomThreshold.x, _BloomThreshold.yzw);
-    color2 = QuadraticThreshold(color2, _BloomThreshold.x, _BloomThreshold.yzw);
-    color3 = QuadraticThreshold(color3, _BloomThreshold.x, _BloomThreshold.yzw);
-    color4 = QuadraticThreshold(color4, _BloomThreshold.x, _BloomThreshold.yzw);
-
-    // Luma weighted average [Karis13]
-    float w0 = 1.0 / (Luminance(color0) + 1.0);
-    float w1 = 1.0 / (Luminance(color1) + 1.0);
-    float w2 = 1.0 / (Luminance(color2) + 1.0);
-    float w3 = 1.0 / (Luminance(color3) + 1.0);
-    float w4 = 1.0 / (Luminance(color4) + 1.0);
-    float wSum = w0 + w1 + w2 + w3 + w4;
-
-    color0 *= w0;
-    color1 *= w1;
-    color2 *= w2;
-    color3 *= w3;
-    color4 *= w4;
-
-    float3 acc = color0 + color1 + color2 + color3 + color4;
-    float3 output = acc / wSum;
-
-    // Guard bands
-    output *= all(dispatchThreadId.xy < uint2(_TexelSize.xy));
-
-    _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = float3(0, 1, 0);
-}
-
-[numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
-void FooBar(uint3 dispatchThreadId : SV_DispatchThreadID)
-{
-    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
-    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), _TexelSize.zw, uint2(GROUP_SIZE, GROUP_SIZE));
-
-    float3 outColor = float3(0, 0, 0);
     uint2 coords = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
-    outColor = LOAD_TEXTURE2D_X(_InputTexture, coords).xyz;
-    
-    //outColor.x = 0;
+
+    float3 outColor = LOAD_TEXTURE2D_X(_InputTexture, coords).xyz;
+    float totalWeight = 0;
+	for(int x = -16; x <= 16; x++)
+	{
+		for(int y = -16; y <= 16; y++)
+		{
+	    	float posX = positionSS.x + x;
+	    	float posY = positionSS.y + y;
+
+			float2 blurPos = uint2(posX, posY);
+
+			float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, blurPos).xyz;
+			//neighborColor *= lerp(0, 1, step(0, posX));
+			//neighborColor *= lerp(0, 1, step(0, posY));
+
+			float distancePreSQRT = x*x + y*y;
+			float distance = sqrt(distancePreSQRT);
+			float weight;
+			weight = 1 - (distance / 16);
+	        
+	        outColor += (neighborColor) * weight;
+	        totalWeight += weight;
+		}
+	}
+	outColor = (outColor / totalWeight);
 
     _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = outColor;
 }

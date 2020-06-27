@@ -23,12 +23,12 @@ MonoBehaviour:
     min: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.68
     min: 0
     max: 1
   scatter:
     m_OverrideState: 1
-    m_Value: 0
+    m_Value: 0.768
     min: 0
     max: 1
   tint:
@@ -53,36 +53,6 @@ MonoBehaviour:
   m_HighQualityFiltering:
     m_OverrideState: 1
     m_Value: 0
---- !u!114 &-2109818796249167647
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 598e2d32e2c7b0c418e030c3236d663a, type: 3}
-  m_Name: ChromaticAberration
-  m_EditorClassIdentifier: 
-  active: 0
-  m_AdvancedMode: 0
-  quality:
-    m_OverrideState: 0
-    m_Value: 1
-  spectralLut:
-    m_OverrideState: 0
-    m_Value: {fileID: 0}
-  intensity:
-    m_OverrideState: 1
-    m_Value: 0.006
-    min: 0
-    max: 1
-  m_MaxSamples:
-    m_OverrideState: 0
-    m_Value: 8
-    min: 3
-    max: 24
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99,8 +69,7 @@ MonoBehaviour:
   - {fileID: 6640133647794636954}
   - {fileID: 8711377374188185572}
   - {fileID: -4553502905660264374}
-  - {fileID: -2109818796249167647}
-  - {fileID: 9034432055318214572}
+  - {fileID: 7204701786170147198}
 --- !u!114 &6640133647794636954
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -173,6 +142,45 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 1
     min: 0.001
+--- !u!114 &7204701786170147198
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
+  m_Name: Bloom
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  curve:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 32
+  steps:
+    m_OverrideState: 1
+    m_Value: 64
+    min: 1
+    max: 256
+  scatter:
+    m_OverrideState: 1
+    m_Value: 137
+    min: 0
+    max: 800
+  sigma:
+    m_OverrideState: 1
+    m_Value: 25.8
+    min: 0
+    max: 64
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.121
+    min: 0
+    max: 1
 --- !u!114 &8711377374188185572
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -225,32 +233,3 @@ MonoBehaviour:
     m_Value: 1
     min: 0
     max: 1
---- !u!114 &9034432055318214572
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
-  m_Name: Bloom
-  m_EditorClassIdentifier: 
-  active: 1
-  m_AdvancedMode: 0
-  curve:
-    m_OverrideState: 1
-    m_Value: 1
-    min: 1
-    max: 32
-  steps:
-    m_OverrideState: 1
-    m_Value: 32
-    min: 1
-    max: 1000
-  scatter:
-    m_OverrideState: 1
-    m_Value: 109
-    min: 0
-    max: 800

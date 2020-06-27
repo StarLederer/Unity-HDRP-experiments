@@ -10,16 +10,22 @@ using System.Runtime.CompilerServices;
 public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessComponent
 {
     [Tooltip("Controls the intensity of the effect.")]
-    public ClampedFloatParameter curve = new ClampedFloatParameter(0f, 1f, 32f);
-    public ClampedIntParameter steps = new ClampedIntParameter(1, 1, 1000);
+    public ClampedFloatParameter curve = new ClampedFloatParameter(0f, 0f, 32f);
+    public ClampedIntParameter steps = new ClampedIntParameter(1, 1, 256);
     public ClampedFloatParameter scatter = new ClampedFloatParameter(0f, 0f, 800f);
+    public ClampedFloatParameter sigma = new ClampedFloatParameter(0f, 0f, 64f);
+    public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
 
     Material m_Material;
-	ComputeShader cs;
-	int kernel, kernelt;
+	ComputeShader ScatterCompute;
+	ComputeShader BlurCompute;
+	int scatterKernel, blurKernel;
 	TargetPool m_Pool;
 
-	public bool IsActive() => m_Material != null && cs != null && scatter.value > 0f;
+	RTHandle scatterBuffer;
+	RTHandle bloomBuffer;
+
+	public bool IsActive() => m_Material != null && ScatterCompute != null && scatter.value > 0f;
 
     public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.BeforePostProcess;
 
@@ -36,11 +42,15 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
             Debug.LogError($"Unable to find shader '{kShaderName}'. Post Process Volume Bloom is unable to load.");
 
 		// My workaround to get another pass
-		cs = Resources.Load<ComputeShader>("BlurCompute");
-		kernel = cs.FindKernel("MyBlurComputeShader");
-		kernelt = cs.FindKernel("FooBar");
+		ScatterCompute = Resources.Load<ComputeShader>("ScatterCompute");
+		BlurCompute = Resources.Load<ComputeShader>("BlurCompute");
+		scatterKernel = ScatterCompute.FindKernel("Scatter");
+		blurKernel = BlurCompute.FindKernel("Blur");
 
-		if (cs == null)
+		scatterBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
+		bloomBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
+
+		if (ScatterCompute == null)
 		{
 			Debug.LogError("Could not load the compute shader");
 		}
@@ -51,29 +61,34 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
         if (m_Material == null)
             return;
 
-		RTHandle buf = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
-
-		// theirs
-		//m_Material.SetFloat("_Curve", curve.value);
-		//m_Material.SetInt("_Steps", steps.value);
-		//m_Material.SetFloat("_Radius", scatter.value);
-		//m_Material.SetTexture("_InputTexture", source);
-		//HDUtils.DrawFullScreen(cmd, m_Material, buf);
-
-		// mine
-		//var buff = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
-
+		// Scatter and save to scatter buffer
 		m_Pool.SetHWDynamicResolutionState(camera);
-		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputTexture"), source);
-		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_OutputTexture"), buf);
-		cmd.DispatchCompute(cs, kernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_InputTexture"), source);
+		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_OutputTexture"), scatterBuffer);
+		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Curve"), curve.value);
+		cmd.SetComputeIntParam(ScatterCompute, Shader.PropertyToID("_Steps"), steps.value);
+		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Radius"), scatter.value);
+		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Sigma"), sigma.value);
+		cmd.DispatchCompute(ScatterCompute, scatterKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
-		cmd.SetComputeTextureParam(cs, kernelt, Shader.PropertyToID("_InputTexture"), buf);
-		cmd.SetComputeTextureParam(cs, kernelt, Shader.PropertyToID("_OutputTexture"), destination);
-		cmd.DispatchCompute(cs, kernelt, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		// Blur the scatter buffer
+		m_Pool.SetHWDynamicResolutionState(camera);
+		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
+		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
+		cmd.DispatchCompute(BlurCompute, blurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+
+		// Combine
+		m_Material.SetTexture("_InputTexture", source);
+		m_Material.SetTexture("_BloomTexture", bloomBuffer);
+		m_Material.SetFloat("_Intensity", intensity.value);
+		HDUtils.DrawFullScreen(cmd, m_Material, destination);
+
+		//cmd.SetComputeTextureParam(cs, kernelt, Shader.PropertyToID("_InputTexture"), buf);
+		//cmd.SetComputeTextureParam(cs, kernelt, Shader.PropertyToID("_OutputTexture"), destination);
+		//cmd.DispatchCompute(cs, kernelt, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 	}
 
-    public override void Cleanup()
+	public override void Cleanup()
     {
 		m_Pool.Cleanup();
 		CoreUtils.Destroy(m_Material);
