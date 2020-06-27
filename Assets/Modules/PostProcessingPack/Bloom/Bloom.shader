@@ -48,7 +48,7 @@ Shader "Hidden/Shader/Bloom"
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-		float2 positionSS = input.texcoord * _ScreenSize.xy;
+		uint2 positionSS = input.texcoord * _ScreenSize.xy;
         float3 outColor;
         outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
         outColor += LOAD_TEXTURE2D_X(_BloomTexture, positionSS).xyz * _Intensity;
@@ -58,6 +58,7 @@ Shader "Hidden/Shader/Bloom"
         //outColor.z = lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).z, LOAD_TEXTURE2D_X(_BloomTexture, positionSS).z, _Intensity);
 
         return float4(outColor.xyz, 1);
+        //return LOAD_TEXTURE2D_X(_BloomTexture, positionSS);
     }
 
 

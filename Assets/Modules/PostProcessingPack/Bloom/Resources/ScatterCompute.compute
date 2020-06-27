@@ -1,7 +1,7 @@
 ﻿#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
-#include "Packages/com.unity.render-pipelines.high-definition/Runtime/PostProcessing/Shaders/BloomCommon.hlsl"
+//#include "Packages/com.unity.render-pipelines.high-definition/Runtime/PostProcessing/Shaders/BloomCommon.hlsl"
 
 #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
 
@@ -14,11 +14,6 @@ float _Radius;
 float _Sigma;
 
 SAMPLER(sampler_LinearClamp);
-
-CBUFFER_START(cb0)
-    float4 _TexelSize;
-    float4 _BloomThreshold;
-CBUFFER_END
 
 #define GROUP_SIZE 8
 
@@ -37,30 +32,27 @@ float random(float2 uv)
 void Scatter(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
-    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), _TexelSize.zw, uint2(GROUP_SIZE, GROUP_SIZE));
+    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
     uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
-    //outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+    positionSS = uint2(max(1, positionSS.x), max(1, positionSS.y));
     
     float3 outColor = float3(0, 0, 0);
     float totalWeight = 0;
 	for(int i = 1; i <= _Steps; i++)
 	{
     	float x = (random(positionSS * i.xx) - 0.5) * 2 * _Radius;
-    	//x *= lerp(1, -1, step(_ScreenSize.x, positionSS.x + x));
-    	//x *= lerp(-1, 1, step(0, positionSS.x + x));
     	float y = ((random(positionSS * i.xx + 0.1.xx) - 0.5) * 2 * _Radius);
-    	//y *= lerp(1, -1, step(_ScreenSize.y, + positionSS.y + y));
-    	//y *= lerp(-1, 1, step(0, positionSS.y + y));
-
     	float posX = positionSS.x + x;
     	float posY = positionSS.y + y;
+        posX = min(_ScreenSize.x - 1, posX);
+        posY = min(_ScreenSize.y - 1, posY);
 
 		float2 scatterPos = uint2(posX, posY);
 
 		//_InputTexture[COORD_TEXTURE2D_X(float2(posX, posY))] = 0.xxxx;
 		float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, scatterPos).xyz;
-		neighborColor *= lerp(0, 1, step(0, posX));
-		neighborColor *= lerp(0, 1, step(0, posY));
+		//neighborColor *= lerp(1, 0, step(posX, 1));
+		//neighborColor *= lerp(1, 0, step(posY, 1));
 
 		float br = Max3(neighborColor.x, neighborColor.y, neighborColor.z);
         //br = pow(br, _Curve);

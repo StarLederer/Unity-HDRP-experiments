@@ -86,10 +86,6 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		m_Material.SetTexture("_BloomTexture", bloomBuffer);
 		m_Material.SetFloat("_Intensity", intensity.value);
 		HDUtils.DrawFullScreen(cmd, m_Material, destination);
-
-		//cmd.SetComputeTextureParam(cs, kernelt, Shader.PropertyToID("_InputTexture"), buf);
-		//cmd.SetComputeTextureParam(cs, kernelt, Shader.PropertyToID("_OutputTexture"), destination);
-		//cmd.DispatchCompute(cs, kernelt, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 	}
 
 	public override void Cleanup()
