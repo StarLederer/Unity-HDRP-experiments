@@ -113,6 +113,7 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 			m_Targets = new Dictionary<int, Stack<RTHandle>>();
 			m_Tracker = 0;
 			m_HasHWDynamicResolution = false;
+			//RTHandles.Initialize();
 		}
 
 		public void Cleanup()

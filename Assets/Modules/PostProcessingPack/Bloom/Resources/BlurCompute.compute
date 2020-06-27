@@ -40,7 +40,7 @@ void Blur(uint3 dispatchThreadId : SV_DispatchThreadID)
 		for(int y = -_BlurSteps; y <= _BlurSteps; y++)
 		{
 	    	int posX = positionSS.x + x * _BlurStepSize;
-	    	int posY = positionSS.y + y;
+	    	int posY = positionSS.y + y * _BlurStepSize;
 
 			uint2 blurPos = uint2(posX, posY);
 
@@ -48,7 +48,7 @@ void Blur(uint3 dispatchThreadId : SV_DispatchThreadID)
 
 			float distance = sqrt(x*x + y*y);
 			float weight;
-			weight = 1 - (distance / _BlurSteps);
+			weight = max(0, (distance / _BlurSteps));
 	        
 	        outColor += (neighborColor) * weight;
 	        totalWeight += weight;

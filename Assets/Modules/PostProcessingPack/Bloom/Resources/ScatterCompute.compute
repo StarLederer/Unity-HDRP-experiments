@@ -67,9 +67,9 @@ void Scatter(uint3 dispatchThreadId : SV_DispatchThreadID)
 		float distancePreSQRT = x*x + y*y;
 		float distance = sqrt(distancePreSQRT);
 		float weight = 1 - (distance / _Radius);
-		//weight = pow(weight * 8, 1);
+        weight = max(0, weight);
         
-        outColor += max(0, neighborColor * br * weight);
+        outColor += neighborColor/* * br*/ * weight;
         totalWeight += weight;
 	}
 	outColor = (outColor / totalWeight);
