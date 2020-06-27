@@ -1,5 +1,35 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-8611073067206777139
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a6b00fcf518bb94a90b408492e07b44, type: 3}
+  m_Name: FilmGrain
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  type:
+    m_OverrideState: 0
+    m_Value: 0
+  intensity:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  response:
+    m_OverrideState: 0
+    m_Value: 0.8
+    min: 0
+    max: 1
+  texture:
+    m_OverrideState: 0
+    m_Value: {fileID: 0}
 --- !u!114 &-4553502905660264374
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -69,7 +99,51 @@ MonoBehaviour:
   - {fileID: 6640133647794636954}
   - {fileID: 8711377374188185572}
   - {fileID: -4553502905660264374}
-  - {fileID: 7204701786170147198}
+  - {fileID: 3178476024394291696}
+--- !u!114 &3178476024394291696
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
+  m_Name: Bloom
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  steps:
+    m_OverrideState: 1
+    m_Value: 32
+    min: 1
+    max: 256
+  scatter:
+    m_OverrideState: 1
+    m_Value: 10
+    min: 0
+    max: 800
+  sigma:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 64
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.297
+    min: 0
+    max: 1
+  blurSteps:
+    m_OverrideState: 1
+    m_Value: 1
+    min: 1
+    max: 16
+  blurStepSize:
+    m_OverrideState: 1
+    m_Value: 4
+    min: 1
+    max: 4
 --- !u!114 &6640133647794636954
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -142,45 +216,6 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 1
     min: 0.001
---- !u!114 &7204701786170147198
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
-  m_Name: Bloom
-  m_EditorClassIdentifier: 
-  active: 1
-  m_AdvancedMode: 0
-  curve:
-    m_OverrideState: 0
-    m_Value: 0
-    min: 0
-    max: 32
-  steps:
-    m_OverrideState: 1
-    m_Value: 64
-    min: 1
-    max: 256
-  scatter:
-    m_OverrideState: 1
-    m_Value: 137
-    min: 0
-    max: 800
-  sigma:
-    m_OverrideState: 1
-    m_Value: 25.8
-    min: 0
-    max: 64
-  intensity:
-    m_OverrideState: 1
-    m_Value: 0.121
-    min: 0
-    max: 1
 --- !u!114 &8711377374188185572
 MonoBehaviour:
   m_ObjectHideFlags: 3

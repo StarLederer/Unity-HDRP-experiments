@@ -10,13 +10,16 @@ using System.Runtime.CompilerServices;
 public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessComponent
 {
     [Tooltip("Controls the intensity of the effect.")]
-    public ClampedFloatParameter curve = new ClampedFloatParameter(0f, 0f, 32f);
+	[Header("Scattering")]
     public ClampedIntParameter steps = new ClampedIntParameter(1, 1, 256);
     public ClampedFloatParameter scatter = new ClampedFloatParameter(0f, 0f, 800f);
     public ClampedFloatParameter sigma = new ClampedFloatParameter(0f, 0f, 64f);
     public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
+	[Header("Blurring")]
+	public ClampedIntParameter blurSteps = new ClampedIntParameter(1, 1, 16);
+	public ClampedFloatParameter blurStepSize = new ClampedFloatParameter(1f, 1f, 4f);
 
-    Material m_Material;
+	Material m_Material;
 	ComputeShader ScatterCompute;
 	ComputeShader BlurCompute;
 	int scatterKernel, blurKernel;
@@ -65,7 +68,6 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		m_Pool.SetHWDynamicResolutionState(camera);
 		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_InputTexture"), source);
 		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_OutputTexture"), scatterBuffer);
-		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Curve"), curve.value);
 		cmd.SetComputeIntParam(ScatterCompute, Shader.PropertyToID("_Steps"), steps.value);
 		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Radius"), scatter.value);
 		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Sigma"), sigma.value);
@@ -75,6 +77,8 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		m_Pool.SetHWDynamicResolutionState(camera);
 		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
 		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
+		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
+		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
 		cmd.DispatchCompute(BlurCompute, blurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Combine
