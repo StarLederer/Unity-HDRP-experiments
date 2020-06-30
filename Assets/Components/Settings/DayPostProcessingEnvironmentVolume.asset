@@ -19,12 +19,12 @@ MonoBehaviour:
     m_Value: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.383
     min: 0
     max: 1
   response:
     m_OverrideState: 0
-    m_Value: 0.8
+    m_Value: 1
     min: 0
     max: 1
   texture:
@@ -53,12 +53,12 @@ MonoBehaviour:
     min: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 0.374
+    m_Value: 1
     min: 0
     max: 1
   scatter:
     m_OverrideState: 1
-    m_Value: 0.791
+    m_Value: 1
     min: 0
     max: 1
   tint:
@@ -79,7 +79,7 @@ MonoBehaviour:
     m_Value: 1
   m_Resolution:
     m_OverrideState: 1
-    m_Value: 2
+    m_Value: 4
   m_HighQualityFiltering:
     m_OverrideState: 1
     m_Value: 0
@@ -100,8 +100,8 @@ MonoBehaviour:
   - {fileID: 8711377374188185572}
   - {fileID: -8611073067206777139}
   - {fileID: -4553502905660264374}
-  - {fileID: 3178476024394291696}
---- !u!114 &3178476024394291696
+  - {fileID: 4097680551860745973}
+--- !u!114 &4097680551860745973
 MonoBehaviour:
   m_ObjectHideFlags: 3
   m_CorrespondingSourceObject: {fileID: 0}
@@ -119,10 +119,10 @@ MonoBehaviour:
     m_OverrideState: 1
     m_Value: 32
     min: 1
-    max: 256
+    max: 128
   scatter:
     m_OverrideState: 1
-    m_Value: 800
+    m_Value: 169
     min: 0
     max: 800
   sigma:
@@ -132,17 +132,17 @@ MonoBehaviour:
     max: 64
   intensity:
     m_OverrideState: 1
-    m_Value: 0.359
+    m_Value: 1
     min: 0
     max: 1
   blurSteps:
     m_OverrideState: 1
-    m_Value: 16
+    m_Value: 1
     min: 1
     max: 16
   blurStepSize:
     m_OverrideState: 1
-    m_Value: 3.17
+    m_Value: 1
     min: 1
     max: 4
 --- !u!114 &6640133647794636954
@@ -245,7 +245,7 @@ MonoBehaviour:
     m_Value: {x: 0.5, y: 0.5}
   intensity:
     m_OverrideState: 1
-    m_Value: 0.159
+    m_Value: 0.161
     min: 0
     max: 1
   smoothness:

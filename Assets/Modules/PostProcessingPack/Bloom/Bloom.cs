@@ -11,7 +11,7 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 {
     [Tooltip("Controls the intensity of the effect.")]
 	[Header("Scattering")]
-    public ClampedIntParameter steps = new ClampedIntParameter(1, 1, 256);
+    public ClampedIntParameter steps = new ClampedIntParameter(1, 1, 128); // the noise hash starts to show the pattern if set heigher than around 128
     public ClampedFloatParameter scatter = new ClampedFloatParameter(0f, 0f, 800f);
     public ClampedFloatParameter sigma = new ClampedFloatParameter(0f, 0f, 64f);
     public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
@@ -19,14 +19,16 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 	public ClampedIntParameter blurSteps = new ClampedIntParameter(1, 1, 16);
 	public ClampedFloatParameter blurStepSize = new ClampedFloatParameter(1f, 1f, 4f);
 
+	private int downsample = 4;
+	private Vector4 texelSize;
+
 	Material m_Material;
 	ComputeShader ScatterCompute;
 	ComputeShader BlurCompute;
-	int scatterKernel, clearKernel, blurKernel, vBlurKernel;
+	int scatterKernel, clearKernel, upsampleKernel, blurKernel, vBlurKernel;
 	TargetPool m_Pool;
 
 	RTHandle scatterBuffer;
-	RTHandle hBlurBuffer;
 	RTHandle bloomBuffer;
 
 	public bool IsActive() => intensity.value > 0f;
@@ -39,6 +41,8 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
     {
 		m_Pool = new TargetPool();
 
+		texelSize = new Vector4(downsample, downsample, 1f / downsample, 1f / downsample);
+
 		// Post processing default shader
 		if (Shader.Find(kShaderName) != null)
             m_Material = new Material(Shader.Find(kShaderName));
@@ -49,12 +53,12 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		ScatterCompute = Resources.Load<ComputeShader>("ScatterCompute");
 		BlurCompute = Resources.Load<ComputeShader>("BlurCompute");
 		clearKernel = ScatterCompute.FindKernel("Clear");
-		scatterKernel = ScatterCompute.FindKernel("Scatter");
+		scatterKernel = ScatterCompute.FindKernel("OldScatter");
+		upsampleKernel = BlurCompute.FindKernel("Upsample");
 		blurKernel = BlurCompute.FindKernel("Blur");
 		vBlurKernel = BlurCompute.FindKernel("VBlur");
 
-		scatterBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
-		hBlurBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
+		scatterBuffer = m_Pool.Get(new Vector2(texelSize.z, texelSize.w), GraphicsFormat.B10G11R11_UFloatPack32);
 		bloomBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
 
 		if (ScatterCompute == null)
@@ -70,10 +74,11 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 
 		m_Pool.SetHWDynamicResolutionState(camera);
 
-		// Clear the catter buffer
-		cmd.SetComputeTextureParam(ScatterCompute, clearKernel, Shader.PropertyToID("_InputTexture"), source);
-		cmd.SetComputeTextureParam(ScatterCompute, clearKernel, Shader.PropertyToID("_OutputTexture"), scatterBuffer);
-		cmd.DispatchCompute(ScatterCompute, clearKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		// Clear the scatter buffer
+		// Only necessary if the weird inverse scatter is used
+		//cmd.SetComputeTextureParam(ScatterCompute, clearKernel, Shader.PropertyToID("_InputTexture"), source);
+		//cmd.SetComputeTextureParam(ScatterCompute, clearKernel, Shader.PropertyToID("_OutputTexture"), scatterBuffer);
+		//cmd.DispatchCompute(ScatterCompute, clearKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Scatter and save to scatter buffer
 		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_InputTexture"), source);
@@ -81,22 +86,29 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		cmd.SetComputeIntParam(ScatterCompute, Shader.PropertyToID("_Steps"), steps.value);
 		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Radius"), scatter.value);
 		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Sigma"), sigma.value);
+		cmd.SetComputeVectorParam(ScatterCompute, Shader.PropertyToID("_TexelSize"), texelSize);
 		cmd.DispatchCompute(ScatterCompute, scatterKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+
+		// Upsample the scatter buffer
+		cmd.SetComputeTextureParam(BlurCompute, upsampleKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
+		cmd.SetComputeTextureParam(BlurCompute, upsampleKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
+		cmd.SetComputeVectorParam(BlurCompute, Shader.PropertyToID("_TexelSize"), texelSize);
+		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
+		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
+		//cmd.DispatchCompute(BlurCompute, upsampleKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Blur the scatter buffer
 		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
-		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_HBlurBuffer"), scatterBuffer);
 		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
 		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
 		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
 		cmd.DispatchCompute(BlurCompute, blurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		cmd.SetComputeTextureParam(BlurCompute, vBlurKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
-		//cmd.SetComputeTextureParam(BlurCompute, vBlurKernel, Shader.PropertyToID("_HBlurBuffer"), scatterBuffer);
 		cmd.SetComputeTextureParam(BlurCompute, vBlurKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
 		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
 		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
-		cmd.DispatchCompute(BlurCompute, vBlurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		//cmd.DispatchCompute(BlurCompute, vBlurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Combine
 		m_Material.SetTexture("_InputTexture", source);
@@ -111,7 +123,7 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		CoreUtils.Destroy(m_Material);
     }
 
-	#region Render Target Management Utilities
+	#region Render Target Management Utility
 
 	// Quick utility class to manage temporary render targets for post-processing and keep the
 	// code readable.

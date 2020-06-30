@@ -5,8 +5,11 @@
 
 #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
 
+#pragma kernel Upsample
 #pragma kernel Blur
 #pragma kernel VBlur
+
+float4 _TexelSize;
 
 TEXTURE2D_X(_InputTexture);
 RW_TEXTURE2D_X(float3, _OutputTexture);
@@ -19,60 +22,39 @@ SAMPLER(sampler_LinearClamp);
 
 //
 //
-// Blur 1
-// [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
-// void Blur(uint3 dispatchThreadId : SV_DispatchThreadID)
-// {
-//     UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
-//     PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
-//     uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+// Upsample
+[numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
+void Upsample(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+	UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+	PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
+	uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+	float2 uv = posInputs.positionNDC;
+	positionSS *= _TexelSize.z;
 
-//     float3 outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
-//     float totalWeight = 1;
-// 	for(int x = -_BlurSteps; x <= _BlurSteps; x++)
-// 	{
-// 		for(int y = -_BlurSteps; y <= _BlurSteps; y++)
-// 		{
-// 	    	int posX = positionSS.x + x * _BlurStepSize;
-// 	    	int posY = positionSS.y + y * _BlurStepSize;
-// 			posX = max(1, posX);
-// 			posY = max(1, posY);
-// 			posX = min(_ScreenSize.x - 1, posX);
-//        		posY = min(_ScreenSize.y - 1, posY);
+	float3 outColor;
+	outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+	//float3 outColor = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, positionSS, 0.0).xyz;
 
-// 			uint2 blurPos = uint2(posX, posY);
-
-// 			float3 neighborColor = float3(0, 0, 0);
-// 			neighborColor += LOAD_TEXTURE2D_X(_InputTexture, blurPos).xyz;
-
-// 			float distance = sqrt(x*x + y*y);
-// 			float weight = distance / _BlurSteps;
-// 			weight = max(0, weight);
-	        
-// 	        outColor += (neighborColor) * weight;
-// 	        totalWeight += weight;
-// 		}
-// 	}
-// 	outColor = (outColor / totalWeight);
-
-//     _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = outColor;
-// }
+	_OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = outColor;
+}
 
 //
 //
-// Blur 2
+// Horizontal blur
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
 void Blur(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
 	UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
 	PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
-	uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+	float2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+	positionSS *= _TexelSize.z;
 
 	float3 outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
 	float totalWeight = 1;
 	for(int x = -_BlurSteps; x <= _BlurSteps; x++)
 	{
-		int posX = positionSS.x + x * _BlurStepSize;
+		float posX = positionSS.x + x * _BlurStepSize;
 		//int posY = positionSS.y + y * _BlurStepSize;
 		posX = max(1, posX);
 		//posY = max(1, posY);
@@ -97,12 +79,16 @@ void Blur(uint3 dispatchThreadId : SV_DispatchThreadID)
 	_OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = outColor;
 }
 
+//
+//
+// Vertical blur
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
 void VBlur(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
 	UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
 	PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
 	uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+	positionSS *= _TexelSize.z;
 
 	float3 outColor = LOAD_TEXTURE2D_X(_OutputTexture, positionSS).xyz;
 	float totalWeight = 1;

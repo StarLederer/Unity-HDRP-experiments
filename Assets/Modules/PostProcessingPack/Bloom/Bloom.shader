@@ -58,7 +58,7 @@ Shader "Hidden/Shader/Bloom"
         //outColor.z = lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).z, LOAD_TEXTURE2D_X(_BloomTexture, positionSS).z, _Intensity);
 
         return float4(outColor.xyz, 1);
-        //return LOAD_TEXTURE2D_X(_BloomTexture, positionSS) * _Intensity;
+        return LOAD_TEXTURE2D_X(_BloomTexture, positionSS) * _Intensity;
     }
 
 
