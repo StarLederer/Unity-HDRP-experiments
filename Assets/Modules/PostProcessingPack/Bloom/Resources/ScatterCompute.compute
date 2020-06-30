@@ -5,6 +5,7 @@
 
 #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
 
+#pragma kernel Clear
 #pragma kernel Scatter
 
 TEXTURE2D_X(_InputTexture);
@@ -27,6 +28,20 @@ float random(float2 uv)
 
 //
 //
+// Clear compute
+[numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
+void Clear(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
+    uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+    //positionSS = uint2(max(1, positionSS.x), max(1, positionSS.y));
+
+    _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = float3(0, 0, 0);
+}
+
+//
+//
 // Scatter compute
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
 void Scatter(uint3 dispatchThreadId : SV_DispatchThreadID)
@@ -36,36 +51,62 @@ void Scatter(uint3 dispatchThreadId : SV_DispatchThreadID)
     uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
     //positionSS = uint2(max(1, positionSS.x), max(1, positionSS.y));
     
-    float3 outColor = float3(0, 0, 0);
-    float totalWeight = 0;
-	for(int i = 1; i <= _Steps; i++)
-	{
-    	float x = (random(positionSS * i.xx) - 0.5) * 2 * _Radius;
-    	float y = ((random(positionSS * i.xx + 0.1.xx) - 0.5) * 2 * _Radius);
-    	float posX = positionSS.x + x;
-    	float posY = positionSS.y + y;
-        posX = max(1, posX);
-        posY = max(1, posY);
-        posX = min(_ScreenSize.x - 1, posX);
-        posY = min(_ScreenSize.y - 1, posY);
+    // float3 outColor = float3(0, 0, 0);
+    // float totalWeight = 0;
+    // for(int i = 1; i <= _Steps; i++)
+    // {
+    //     float x = (random(positionSS * i.xx) - 0.5) * 2 * _Radius;
+    //     float y = ((random(positionSS * i.xx + 0.1.xx) - 0.5) * 2 * _Radius);
+    //     float posX = positionSS.x + x;
+    //     float posY = positionSS.y + y;
+    //     posX = max(1, posX);
+    //     posY = max(1, posY);
+    //     posX = min(_ScreenSize.x - 1, posX);
+    //     posY = min(_ScreenSize.y - 1, posY);
 
-		float2 scatterPos = uint2(posX, posY);
+    //     float2 scatterPos = uint2(posX, posY);
 
-		float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, scatterPos).xyz;
-		//neighborColor *= lerp(1, 0, step(posX, 1));
-		//neighborColor *= lerp(1, 0, step(posY, 1));
+    //     float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, scatterPos).xyz;
+    //     //neighborColor *= lerp(1, 0, step(posX, 1));
+    //     //neighborColor *= lerp(1, 0, step(posY, 1));
 
-		//float br = Max3(neighborColor.x, neighborColor.y, neighborColor.z);
-		float distancePreSQRT = x*x + y*y;
-		float distance = sqrt(distancePreSQRT);
-		float weight = 1 - (distance / _Radius);
-        weight = max(0, weight);
-        
-        outColor += neighborColor * weight;
-        totalWeight += weight;
-	}
-    totalWeight = max(0.1, totalWeight);
-	outColor = (outColor / totalWeight);
+    //     float distancePreSQRT = x*x + y*y;
+    //     float distance = sqrt(distancePreSQRT);
+    //     float weight = 1 - (distance / _Radius);
+    //     weight = max(0.00001, weight);
 
-    _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = outColor;
+    //     outColor += neighborColor * weight;
+    //     totalWeight += weight;
+    // }
+    // outColor = (outColor / totalWeight);
+
+    // _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = outColor;
+
+    for(int i = 1; i <= _Steps; i++)
+    {
+        float3 currentColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+        //currentColor = pow(currentColor * 2, 2);
+
+        float br = Max3(currentColor.x, currentColor.y, currentColor.z) * 1000000000;
+        br = max(1, br);
+        br = min(0, br);
+        float radius = _Radius;//lerp(0, _Radius, br);
+
+        float seed = i * 0.01;
+        float x = (random(positionSS + seed) - 0.5) * 2 * radius;
+        float y = (random(positionSS + seed + 0.001.xx) - 0.5) * 2 * radius;
+        float posX = positionSS.x + x;
+        float posY = positionSS.y + y;
+        //posX = max(0, posX);
+        //posY = max(0, posY);
+        //posX = min(_ScreenSize.x - 0, posX);
+        //posY = min(_ScreenSize.y - 0, posY);
+        float2 scatterPos = uint2(posX, posY);
+
+        float distance = sqrt(x*x + y*y);
+        float weight = 1 - (distance / _Radius);
+        weight = pow(max(0.00001, weight), 6);
+
+        _OutputTexture[COORD_TEXTURE2D_X(scatterPos)] += currentColor * weight;
+    }
 }

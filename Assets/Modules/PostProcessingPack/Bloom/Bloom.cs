@@ -22,10 +22,11 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 	Material m_Material;
 	ComputeShader ScatterCompute;
 	ComputeShader BlurCompute;
-	int scatterKernel, blurKernel;
+	int scatterKernel, clearKernel, blurKernel, vBlurKernel;
 	TargetPool m_Pool;
 
 	RTHandle scatterBuffer;
+	RTHandle hBlurBuffer;
 	RTHandle bloomBuffer;
 
 	public bool IsActive() => intensity.value > 0f;
@@ -47,10 +48,13 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		// My workaround to get another pass
 		ScatterCompute = Resources.Load<ComputeShader>("ScatterCompute");
 		BlurCompute = Resources.Load<ComputeShader>("BlurCompute");
+		clearKernel = ScatterCompute.FindKernel("Clear");
 		scatterKernel = ScatterCompute.FindKernel("Scatter");
 		blurKernel = BlurCompute.FindKernel("Blur");
+		vBlurKernel = BlurCompute.FindKernel("VBlur");
 
 		scatterBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
+		hBlurBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
 		bloomBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
 
 		if (ScatterCompute == null)
@@ -64,8 +68,14 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
         if (m_Material == null)
             return;
 
-		// Scatter and save to scatter buffer
 		m_Pool.SetHWDynamicResolutionState(camera);
+
+		// Clear the catter buffer
+		cmd.SetComputeTextureParam(ScatterCompute, clearKernel, Shader.PropertyToID("_InputTexture"), source);
+		cmd.SetComputeTextureParam(ScatterCompute, clearKernel, Shader.PropertyToID("_OutputTexture"), scatterBuffer);
+		cmd.DispatchCompute(ScatterCompute, clearKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+
+		// Scatter and save to scatter buffer
 		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_InputTexture"), source);
 		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_OutputTexture"), scatterBuffer);
 		cmd.SetComputeIntParam(ScatterCompute, Shader.PropertyToID("_Steps"), steps.value);
@@ -74,12 +84,19 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		cmd.DispatchCompute(ScatterCompute, scatterKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Blur the scatter buffer
-		m_Pool.SetHWDynamicResolutionState(camera);
 		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
+		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_HBlurBuffer"), scatterBuffer);
 		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
 		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
 		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
 		cmd.DispatchCompute(BlurCompute, blurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+
+		cmd.SetComputeTextureParam(BlurCompute, vBlurKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
+		//cmd.SetComputeTextureParam(BlurCompute, vBlurKernel, Shader.PropertyToID("_HBlurBuffer"), scatterBuffer);
+		cmd.SetComputeTextureParam(BlurCompute, vBlurKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
+		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
+		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
+		cmd.DispatchCompute(BlurCompute, vBlurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Combine
 		m_Material.SetTexture("_InputTexture", source);
