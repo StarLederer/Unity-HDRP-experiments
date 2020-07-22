@@ -19,13 +19,13 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 	public ClampedIntParameter blurSteps = new ClampedIntParameter(1, 1, 16);
 	public ClampedFloatParameter blurStepSize = new ClampedFloatParameter(1f, 1f, 4f);
 
-	private int downsample = 4;
+	private int downsample = 8;
 	private Vector4 texelSize;
 
 	Material m_Material;
 	ComputeShader ScatterCompute;
 	ComputeShader BlurCompute;
-	int scatterKernel, clearKernel, upsampleKernel, blurKernel, vBlurKernel;
+	int scatterKernel, clearKernel, upsampleKernel;//, blurKernel, vBlurKernel;
 	TargetPool m_Pool;
 
 	RTHandle scatterBuffer;
@@ -54,9 +54,10 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		BlurCompute = Resources.Load<ComputeShader>("BlurCompute");
 		clearKernel = ScatterCompute.FindKernel("Clear");
 		scatterKernel = ScatterCompute.FindKernel("OldScatter");
-		upsampleKernel = BlurCompute.FindKernel("Upsample");
-		blurKernel = BlurCompute.FindKernel("Blur");
-		vBlurKernel = BlurCompute.FindKernel("VBlur");
+		upsampleKernel = BlurCompute.FindKernel("UpsampleUnity");
+		//upsampleVKernel = BlurCompute.FindKernel("UpsampleV");
+		//blurKernel = BlurCompute.FindKernel("Blur");
+		//vBlurKernel = BlurCompute.FindKernel("VBlur");
 
 		scatterBuffer = m_Pool.Get(new Vector2(texelSize.z, texelSize.w), GraphicsFormat.B10G11R11_UFloatPack32);
 		bloomBuffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
@@ -84,31 +85,32 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_InputTexture"), source);
 		cmd.SetComputeTextureParam(ScatterCompute, scatterKernel, Shader.PropertyToID("_OutputTexture"), scatterBuffer);
 		cmd.SetComputeIntParam(ScatterCompute, Shader.PropertyToID("_Steps"), steps.value);
-		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Radius"), scatter.value);
-		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Sigma"), sigma.value);
+		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Radius"), scatter.value * texelSize.z);
+		//cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Sigma"), sigma.value);
 		cmd.SetComputeVectorParam(ScatterCompute, Shader.PropertyToID("_TexelSize"), texelSize);
-		cmd.DispatchCompute(ScatterCompute, scatterKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		cmd.DispatchCompute(ScatterCompute, scatterKernel, (int) Math.Floor(camera.actualWidth * texelSize.z + 7) / 8, (int) (camera.actualHeight * texelSize.w + 7) / 8, camera.viewCount);
 
 		// Upsample the scatter buffer
-		cmd.SetComputeTextureParam(BlurCompute, upsampleKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
-		cmd.SetComputeTextureParam(BlurCompute, upsampleKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
-		cmd.SetComputeVectorParam(BlurCompute, Shader.PropertyToID("_TexelSize"), texelSize);
-		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
-		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
+		//cmd.SetComputeTextureParam(BlurCompute, upsampleKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
+		//cmd.SetComputeTextureParam(BlurCompute, upsampleKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
+		//cmd.SetComputeVectorParam(BlurCompute, Shader.PropertyToID("_TexelSize"), texelSize);
+		//cmd.DispatchCompute(BlurCompute, upsampleKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 		//cmd.DispatchCompute(BlurCompute, upsampleKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
-		// Blur the scatter buffer
-		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
-		cmd.SetComputeTextureParam(BlurCompute, blurKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
-		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
-		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
-		cmd.DispatchCompute(BlurCompute, blurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		//cmd.SetComputeTextureParam(BlurCompute, upsampleVKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
+		//cmd.SetComputeTextureParam(BlurCompute, upsampleVKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
+		//cmd.SetComputeVectorParam(BlurCompute, Shader.PropertyToID("_TexelSize"), texelSize);
+		//cmd.DispatchCompute(BlurCompute, upsampleVKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		//cmd.DispatchCompute(BlurCompute, upsampleVKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
-		cmd.SetComputeTextureParam(BlurCompute, vBlurKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
-		cmd.SetComputeTextureParam(BlurCompute, vBlurKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
-		cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
-		cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
-		//cmd.DispatchCompute(BlurCompute, vBlurKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		// Blur the scatter buffer
+		cmd.SetComputeVectorParam(BlurCompute, Shader.PropertyToID("_TexelSize"), texelSize);
+		cmd.SetComputeTextureParam(BlurCompute, upsampleKernel, Shader.PropertyToID("_InputTexture"), scatterBuffer);
+		cmd.SetComputeTextureParam(BlurCompute, upsampleKernel, Shader.PropertyToID("_OutputTexture"), bloomBuffer);
+		cmd.SetComputeVectorParam(BlurCompute, Shader.PropertyToID("_BloomBicubicParams"), texelSize);
+		//cmd.SetComputeIntParam(BlurCompute, Shader.PropertyToID("_BlurSteps"), blurSteps.value);
+		//cmd.SetComputeFloatParam(BlurCompute, Shader.PropertyToID("_BlurStepSize"), blurStepSize.value);
+		cmd.DispatchCompute(BlurCompute, upsampleKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Combine
 		m_Material.SetTexture("_InputTexture", source);

@@ -53,12 +53,12 @@ MonoBehaviour:
     min: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.166
     min: 0
     max: 1
   scatter:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.702
     min: 0
     max: 1
   tint:
@@ -101,6 +101,7 @@ MonoBehaviour:
   - {fileID: -8611073067206777139}
   - {fileID: -4553502905660264374}
   - {fileID: 4097680551860745973}
+  - {fileID: 4900739702361744030}
 --- !u!114 &4097680551860745973
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -117,12 +118,12 @@ MonoBehaviour:
   m_AdvancedMode: 0
   steps:
     m_OverrideState: 1
-    m_Value: 32
+    m_Value: 98
     min: 1
     max: 128
   scatter:
     m_OverrideState: 1
-    m_Value: 169
+    m_Value: 280
     min: 0
     max: 800
   sigma:
@@ -132,7 +133,7 @@ MonoBehaviour:
     max: 64
   intensity:
     m_OverrideState: 1
-    m_Value: 1
+    m_Value: 0.064
     min: 0
     max: 1
   blurSteps:
@@ -145,6 +146,59 @@ MonoBehaviour:
     m_Value: 1
     min: 1
     max: 4
+--- !u!114 &4900739702361744030
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f086a068d4c5889438831b3ae9afc11c, type: 3}
+  m_Name: Tonemapping
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  mode:
+    m_OverrideState: 1
+    m_Value: 0
+  toeStrength:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  toeLength:
+    m_OverrideState: 0
+    m_Value: 0.5
+    min: 0
+    max: 1
+  shoulderStrength:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  shoulderLength:
+    m_OverrideState: 0
+    m_Value: 0.5
+    min: 0
+  shoulderAngle:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  gamma:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0.001
+  lutTexture:
+    m_OverrideState: 0
+    m_Value: {fileID: 0}
+  lutContribution:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
 --- !u!114 &6640133647794636954
 MonoBehaviour:
   m_ObjectHideFlags: 3

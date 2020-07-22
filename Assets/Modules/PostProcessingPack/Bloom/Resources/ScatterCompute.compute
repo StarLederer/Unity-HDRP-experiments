@@ -64,8 +64,8 @@ void OldScatter(uint3 dispatchThreadId : SV_DispatchThreadID)
         float posY = positionSS.y + y;
         posX = max(1, posX);
         posY = max(1, posY);
-        posX = min(_ScreenSize.x - 1, posX);
-        posY = min(_ScreenSize.y - 1, posY);
+        posX = min(_ScreenSize.x * _TexelSize.z - 1, posX);
+        posY = min(_ScreenSize.y * _TexelSize.w - 1, posY);
 
         float2 scatterPos = uint2(posX, posY);
         scatterPos *= _TexelSize.x;
