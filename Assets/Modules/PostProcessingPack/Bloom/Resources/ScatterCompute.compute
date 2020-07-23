@@ -25,7 +25,7 @@ SAMPLER(sampler_LinearClamp);
 // Functions
 float random(float2 uv)
 {
-	return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453123);
+	return frac(sin(dot(uv * sin(_Time.xxx), float2(12.9898, 78.233))) * 43758.5453123);
 }
 
 //
@@ -40,6 +40,7 @@ void Clear(uint3 dispatchThreadId : SV_DispatchThreadID)
     //positionSS = uint2(max(1, positionSS.x), max(1, positionSS.y));
 
     _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = float3(0, 0, 0);
+    //_OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] ;
 }
 
 //
@@ -71,9 +72,6 @@ void OldScatter(uint3 dispatchThreadId : SV_DispatchThreadID)
         scatterPos *= _TexelSize.x;
 
         float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, scatterPos).xyz;
-        //float3 neighborColor = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(_TexelSize.zw + uv, _TexelSize.zw), 0.0).xyz;
-        //neighborColor *= lerp(1, 0, step(posX, 1));
-        //neighborColor *= lerp(1, 0, step(posY, 1));
 
         float distancePreSQRT = x*x + y*y;
         float distance = sqrt(distancePreSQRT);
@@ -96,36 +94,34 @@ void Scatter(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
     PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
-    uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
-    positionSS = uint2(max(1, positionSS.x), max(1, positionSS.y));
-    float2 uv = posInputs.positionNDC;
-
+    float2 positionSS = posInputs.positionNDC * _TexelSize.z;
+    positionSS.x = min(_ScreenSize.x - 1, positionSS.x);
+    positionSS.y = min(_ScreenSize.y - 1, positionSS.y);
+    
+    float3 outColor = float3(0, 0, 0);
+    float totalWeight = 0;
     for(int i = 1; i <= _Steps; i++)
     {
-        float3 currentColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
-        //float3 currentColor = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(_TexelSize.zw + uv, _TexelSize.zw), 0.0).xyz;
-        //currentColor = pow(currentColor * 2, 2);
-
-        float br = Max3(currentColor.x, currentColor.y, currentColor.z) * 1000000000;
-        br = max(1, br);
-        br = min(0, br);
-        float radius = _Radius;//lerp(0, _Radius, br);
-
-        float seed = i * 0.01;
-        float x = (random(positionSS + seed) - 0.5) * 2 * radius;
-        float y = (random(positionSS + seed + 0.001.xx) - 0.5) * 2 * radius;
+        float x = (random(positionSS * i.xx) - 0.5) * 2 * _Radius;
+        float y = ((random(positionSS * i.xx + 0.1.xx) - 0.5) * 2 * _Radius);
         float posX = positionSS.x + x;
         float posY = positionSS.y + y;
-        //posX = max(0, posX);
-        //posY = max(0, posY);
-        //posX = min(_ScreenSize.x - 0, posX);
-        //posY = min(_ScreenSize.y - 0, posY);
-        float2 scatterPos = uint2(posX, posY);
+        posX = max(1, posX);
+        posY = max(1, posY);
+        posX = min(_ScreenSize.x - 1, posX);
+        posY = min(_ScreenSize.y - 1, posY);
 
-        float distance = sqrt(x*x + y*y);
+        float2 scatterPos = uint2(posX, posY);
+        float3 neighborColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+
+        float distancePreSQRT = x*x + y*y;
+        float distance = sqrt(distancePreSQRT);
         float weight = 1 - (distance / _Radius);
         weight = pow(max(0.00001, weight), 6);
 
-        _OutputTexture[COORD_TEXTURE2D_X(scatterPos)] += currentColor * weight;
+        outColor += neighborColor * weight;
+
+        //_OutputTexture[COORD_TEXTURE2D_X(scatterPos)] /= _Radius;
+        _OutputTexture[COORD_TEXTURE2D_X(scatterPos)] = neighborColor;
     }
 }
