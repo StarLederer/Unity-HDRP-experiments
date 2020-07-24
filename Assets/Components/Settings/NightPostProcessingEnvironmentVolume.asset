@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5a6b00fcf518bb94a90b408492e07b44, type: 3}
   m_Name: FilmGrain
   m_EditorClassIdentifier: 
-  active: 1
+  active: 0
   m_AdvancedMode: 0
   type:
     m_OverrideState: 0
@@ -83,6 +83,59 @@ MonoBehaviour:
   m_HighQualityFiltering:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &-2292412161500994345
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f086a068d4c5889438831b3ae9afc11c, type: 3}
+  m_Name: Tonemapping
+  m_EditorClassIdentifier: 
+  active: 0
+  m_AdvancedMode: 0
+  mode:
+    m_OverrideState: 1
+    m_Value: 0
+  toeStrength:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  toeLength:
+    m_OverrideState: 0
+    m_Value: 0.5
+    min: 0
+    max: 1
+  shoulderStrength:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  shoulderLength:
+    m_OverrideState: 0
+    m_Value: 0.5
+    min: 0
+  shoulderAngle:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  gamma:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0.001
+  lutTexture:
+    m_OverrideState: 0
+    m_Value: {fileID: 0}
+  lutContribution:
+    m_OverrideState: 0
+    m_Value: 1
+    min: 0
+    max: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -101,6 +154,7 @@ MonoBehaviour:
   - {fileID: -8611073067206777139}
   - {fileID: -4553502905660264374}
   - {fileID: 3178476024394291696}
+  - {fileID: -2292412161500994345}
 --- !u!114 &3178476024394291696
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -117,7 +171,7 @@ MonoBehaviour:
   m_AdvancedMode: 0
   steps:
     m_OverrideState: 1
-    m_Value: 44
+    m_Value: 8
     min: 1
     max: 256
   scatter:
@@ -125,31 +179,36 @@ MonoBehaviour:
     m_Value: 444
     min: 0
     max: 800
-  intensity:
+  temporalPower:
     m_OverrideState: 1
-    m_Value: 0.07
+    m_Value: 0.05
     min: 0
     max: 1
   blurStepsLow:
     m_OverrideState: 1
-    m_Value: 16
+    m_Value: 12
     min: 1
     max: 16
   blurStepSizeLow:
     m_OverrideState: 1
-    m_Value: 1.4
+    m_Value: 2
     min: 1
     max: 4
   blurStepsHigh:
     m_OverrideState: 1
-    m_Value: 8
+    m_Value: 4
     min: 1
     max: 16
   blurStepSizeHigh:
     m_OverrideState: 1
-    m_Value: 3
+    m_Value: 4
     min: 1
     max: 4
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.14
+    min: 0
+    max: 1
 --- !u!114 &6640133647794636954
 MonoBehaviour:
   m_ObjectHideFlags: 3

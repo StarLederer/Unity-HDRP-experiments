@@ -50,13 +50,13 @@ Shader "Hidden/Shader/Bloom"
 
 		uint2 positionSS = input.texcoord * _ScreenSize.xy;
         float3 outColor;
-        outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
+        outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
         outColor += LOAD_TEXTURE2D_X(_BloomTexture, positionSS).xyz * _Intensity;
 
-        return float4(lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz, LOAD_TEXTURE2D_X(_BloomTexture, positionSS), _Intensity).xyz, 1);   // Lerp
-        //return float4(outColor.xyz, 1);                                                                                                       // Additive
-        //return LOAD_TEXTURE2D_X(_BloomTexture, positionSS);                                                                                   // Only bloom
-        //return LOAD_TEXTURE2D_X(_BloomTexture, positionSS) * _Intensity;                                                                      // Only bloom with intensity
+        return float4(lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz, LOAD_TEXTURE2D_X(_BloomTexture, positionSS), _Intensity).xyz, 1);       // Lerp
+        //return float4(outColor.xyz, 1);                                                                                                           // Additive
+        //return LOAD_TEXTURE2D_X(_BloomTexture, positionSS);                                                                                       // Only bloom
+        //return LOAD_TEXTURE2D_X(_BloomTexture, positionSS) * _Intensity;                                                                          // Only bloom with intensity
     }
 
 
