@@ -16,12 +16,12 @@ MonoBehaviour:
   m_AdvancedMode: 0
   radius:
     m_OverrideState: 1
-    m_Value: 58
+    m_Value: 93
     min: 0
     max: 512
   intensity:
     m_OverrideState: 1
-    m_Value: 0.0001
+    m_Value: 0.0002
     min: 0
     max: 1
 --- !u!114 &-8611073067206777139

@@ -42,7 +42,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24f077503be6ae942a1e1245dbd53ea9, type: 3}
   m_Name: Bloom
   m_EditorClassIdentifier: 
-  active: 0
+  active: 1
   m_AdvancedMode: 1
   quality:
     m_OverrideState: 1
@@ -83,6 +83,30 @@ MonoBehaviour:
   m_HighQualityFiltering:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &-3029007800702668678
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f1ac484824ceb2e499b7cce2f52932d9, type: 3}
+  m_Name: RainbowBloom
+  m_EditorClassIdentifier: 
+  active: 1
+  m_AdvancedMode: 0
+  radius:
+    m_OverrideState: 1
+    m_Value: 108
+    min: 0
+    max: 512
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.005
+    min: 0
+    max: 1
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -99,116 +123,8 @@ MonoBehaviour:
   - {fileID: 6640133647794636954}
   - {fileID: 8711377374188185572}
   - {fileID: -8611073067206777139}
+  - {fileID: -3029007800702668678}
   - {fileID: -4553502905660264374}
-  - {fileID: 4097680551860745973}
-  - {fileID: 4900739702361744030}
---- !u!114 &4097680551860745973
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 304c66a0077f64d4e8f3035665c64cf1, type: 3}
-  m_Name: Bloom
-  m_EditorClassIdentifier: 
-  active: 1
-  m_AdvancedMode: 0
-  steps:
-    m_OverrideState: 1
-    m_Value: 26
-    min: 1
-    max: 128
-  scatter:
-    m_OverrideState: 1
-    m_Value: 444
-    min: 0
-    max: 800
-  temporalPower:
-    m_OverrideState: 1
-    m_Value: 0.1
-    min: 0
-    max: 1
-  blurStepsLow:
-    m_OverrideState: 1
-    m_Value: 12
-    min: 1
-    max: 16
-  blurStepSizeLow:
-    m_OverrideState: 1
-    m_Value: 2
-    min: 1
-    max: 4
-  blurStepsHigh:
-    m_OverrideState: 1
-    m_Value: 4
-    min: 1
-    max: 16
-  blurStepSizeHigh:
-    m_OverrideState: 1
-    m_Value: 4
-    min: 1
-    max: 4
-  intensity:
-    m_OverrideState: 1
-    m_Value: 0.14
-    min: 0
-    max: 1
---- !u!114 &4900739702361744030
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f086a068d4c5889438831b3ae9afc11c, type: 3}
-  m_Name: Tonemapping
-  m_EditorClassIdentifier: 
-  active: 0
-  m_AdvancedMode: 0
-  mode:
-    m_OverrideState: 1
-    m_Value: 0
-  toeStrength:
-    m_OverrideState: 0
-    m_Value: 0
-    min: 0
-    max: 1
-  toeLength:
-    m_OverrideState: 0
-    m_Value: 0.5
-    min: 0
-    max: 1
-  shoulderStrength:
-    m_OverrideState: 0
-    m_Value: 0
-    min: 0
-    max: 1
-  shoulderLength:
-    m_OverrideState: 0
-    m_Value: 0.5
-    min: 0
-  shoulderAngle:
-    m_OverrideState: 0
-    m_Value: 0
-    min: 0
-    max: 1
-  gamma:
-    m_OverrideState: 0
-    m_Value: 1
-    min: 0.001
-  lutTexture:
-    m_OverrideState: 0
-    m_Value: {fileID: 0}
-  lutContribution:
-    m_OverrideState: 0
-    m_Value: 1
-    min: 0
-    max: 1
 --- !u!114 &6640133647794636954
 MonoBehaviour:
   m_ObjectHideFlags: 3

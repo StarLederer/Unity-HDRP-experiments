@@ -13,6 +13,11 @@ float _Radius;
 
 #define GROUP_SIZE 8
 
+float random(float2 uv)
+{
+	return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453123);
+}
+
 //
 //
 // Clear compute
@@ -39,12 +44,24 @@ void RainbowBloom(uint3 dispatchThreadId : SV_DispatchThreadID)
     float2 uv = posInputs.positionNDC;
     
 	float3 currentColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+	float rainbowThickness = 100.0;
 
-    for(int i = 0; i <= 359; i++)
+    for(int i = 0; i <= 64; i++)
     {
-    	uint x = uv.x + _Radius * cos(i);
-    	uint y = uv.y + _Radius * sin(i);
+    	float3 outColor = currentColor;
 
-		_OutputTexture[COORD_TEXTURE2D_X(uint2(x, y))] += currentColor;
+    	float rainbowCarryAmount = (random(positionSS * i.xx));
+    	float radius = _Radius + rainbowCarryAmount * rainbowThickness;
+
+    	float crossover = 0.3333;
+
+    	outColor *= float3(1 - smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount), 1, 1);										
+    	outColor *= float3(1, smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount) * (1- smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount)), 1);	
+    	outColor *= float3(1, 1, smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount));											
+
+    	uint x = uv.x + radius * cos(i);
+    	uint y = uv.y + radius * sin(i);
+
+		_OutputTexture[COORD_TEXTURE2D_X(uint2(x, y))] += outColor;
     }
 }
