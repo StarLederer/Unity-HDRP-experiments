@@ -1,4 +1,4 @@
-Shader "Hidden/Shader/Bloom"
+﻿Shader "Hidden/Shader/RainbowBloom"
 {
     HLSLINCLUDE
 
@@ -34,32 +34,23 @@ Shader "Hidden/Shader/Bloom"
         return output;
     }
 
-    //
-    //
     // List of properties to control your post process effect
     float _Intensity;
     TEXTURE2D_X(_InputTexture);
     TEXTURE2D_X(_BloomTexture);
 
-	//
-	//
-	// Post process fragment shader
-    float4 HorizontalBlur(Varyings input) : SV_Target
+    // Effect function
+    float4 CustomPostProcess(Varyings input) : SV_Target
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
 
-		uint2 positionSS = input.texcoord * _ScreenSize.xy;
-        //float3 outColor;
-        //outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
-        //outColor += LOAD_TEXTURE2D_X(_BloomTexture, positionSS).xyz * _Intensity;
+        uint2 positionSS = input.texcoord * _ScreenSize.xy;
+        float3 outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+        outColor += LOAD_TEXTURE2D_X(_BloomTexture, positionSS).xyz * _Intensity;
 
-        return float4(lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz, LOAD_TEXTURE2D_X(_BloomTexture, positionSS), _Intensity).xyz, 1);       // Lerp
-        //return float4(outColor.xyz, 1);                                                                                                           // Additive
-        //return LOAD_TEXTURE2D_X(_BloomTexture, positionSS);                                                                                       // Only bloom
-        //return LOAD_TEXTURE2D_X(_BloomTexture, positionSS) * _Intensity;                                                                          // Only bloom with intensity
+        return float4(outColor, 1);
+        //return float4(lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz, LOAD_TEXTURE2D_X(_BloomTexture, positionSS), _Intensity).xyz, 1);
     }
-
-
 
     ENDHLSL
 
@@ -67,13 +58,15 @@ Shader "Hidden/Shader/Bloom"
     {
         Pass
         {
+            Name "RainbowBloom"
+
             ZWrite Off
             ZTest Always
             Blend Off
             Cull Off
 
             HLSLPROGRAM
-                #pragma fragment HorizontalBlur
+                #pragma fragment CustomPostProcess
                 #pragma vertex Vert
             ENDHLSL
         }

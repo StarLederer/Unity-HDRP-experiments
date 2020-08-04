@@ -29,7 +29,7 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 	Material m_Material;
 	ComputeShader ScatterCompute;
 	ComputeShader BlurCompute;
-	int scatterKernel, clearKernel, upsampleKernel, blurKernel, hBlurKernel, vBlurKernel;
+	int scatterKernel, upsampleKernel, blurKernel, hBlurKernel, vBlurKernel;
 	TargetPool m_Pool;
 
 	RTHandle scatterBuffer;
@@ -59,7 +59,7 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 		ScatterCompute = Resources.Load<ComputeShader>("ScatterCompute");
 		BlurCompute = Resources.Load<ComputeShader>("BlurCompute");
 
-		clearKernel = ScatterCompute.FindKernel("Clear");
+		//clearKernel = ScatterCompute.FindKernel("Clear");
 		scatterKernel = ScatterCompute.FindKernel("TemporalScatter");
 		upsampleKernel = BlurCompute.FindKernel("UpsampleUnity");
 		//blurKernel = BlurCompute.FindKernel("BlurUnity");
@@ -83,13 +83,6 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
             return;
 
 		m_Pool.SetHWDynamicResolutionState(camera);
-
-		// Clear the scatter buffer
-		// Only necessary if the weird inverse scatter is used
-		//cmd.SetComputeVectorParam(ScatterCompute, Shader.PropertyToID("_TexelSize"), texelSize);
-		//cmd.SetComputeTextureParam(ScatterCompute, clearKernel, Shader.PropertyToID("_InputTexture"), source);
-		//cmd.SetComputeTextureParam(ScatterCompute, clearKernel, Shader.PropertyToID("_OutputTexture"), scatterBuffer);
-		//cmd.DispatchCompute(ScatterCompute, clearKernel, (int)Math.Floor(camera.actualWidth * texelSize.z + 7) / 8, (int)(camera.actualHeight * texelSize.w + 7) / 8, camera.viewCount);
 
 		// Scatter and save to scatter buffer
 		cmd.SetComputeFloatParam(ScatterCompute, Shader.PropertyToID("_Time"), Time.time);
@@ -149,6 +142,7 @@ public sealed class Bloom : CustomPostProcessVolumeComponent, IPostProcessCompon
 
 	#region Render Target Management Utility
 
+	// Copied and trimmed from PostProcessSystem.cs
 	// Quick utility class to manage temporary render targets for post-processing and keep the
 	// code readable.
 	class TargetPool

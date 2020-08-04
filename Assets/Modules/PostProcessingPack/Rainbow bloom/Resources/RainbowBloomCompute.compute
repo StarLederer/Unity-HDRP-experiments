@@ -1,0 +1,50 @@
+﻿#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Filtering.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
+#include "Packages/com.unity.render-pipelines.high-definition/Runtime/PostProcessing/Shaders/BloomCommon.hlsl"
+
+#pragma kernel Clear
+#pragma kernel RainbowBloom
+
+TEXTURE2D_X(_InputTexture);
+RW_TEXTURE2D_X(float3, _OutputTexture);
+float _Radius;
+
+#define GROUP_SIZE 8
+
+//
+//
+// Clear compute
+[numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
+void Clear(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
+    uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+
+    _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = float3(0, 0, 0);
+}
+
+//
+//
+// Scatter
+[numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
+void RainbowBloom(uint3 dispatchThreadId : SV_DispatchThreadID)
+{
+    UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
+    PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
+    uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
+    positionSS = uint2(max(1, positionSS.x), max(1, positionSS.y));
+    float2 uv = posInputs.positionNDC;
+    
+	float3 currentColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
+
+    for(int i = 0; i <= 359; i++)
+    {
+    	uint x = uv.x + _Radius * cos(i);
+    	uint y = uv.y + _Radius * sin(i);
+
+		_OutputTexture[COORD_TEXTURE2D_X(uint2(x, y))] += currentColor;
+    }
+}
