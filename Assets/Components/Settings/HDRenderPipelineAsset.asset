@@ -345,6 +345,5 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 78322c7f82657514ebe48203160e3f39, type: 2}
   beforeTransparentCustomPostProcesses: []
   beforePostProcessCustomPostProcesses:
-  - Bloom, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   - RainbowBloom, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   afterPostProcessCustomPostProcesses: []

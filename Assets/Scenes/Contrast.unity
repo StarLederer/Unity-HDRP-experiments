@@ -135,7 +135,7 @@ GameObject:
   - component: {fileID: 94733063}
   - component: {fileID: 94733062}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: Blue cube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -323,7 +323,7 @@ GameObject:
   - component: {fileID: 526382181}
   - component: {fileID: 526382180}
   m_Layer: 0
-  m_Name: Sphere (1)
+  m_Name: White sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -853,7 +853,7 @@ GameObject:
   - component: {fileID: 1863867651}
   - component: {fileID: 1863867650}
   m_Layer: 0
-  m_Name: Sphere
+  m_Name: Red sphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
