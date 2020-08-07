@@ -52,9 +52,11 @@ void RainbowBloom(uint3 dispatchThreadId : SV_DispatchThreadID)
 	float segment = circle / _BladeCount;
     for(float i = segment; i < circle + segment / 2; i += segment)
     {
+        float jitteredI = i + (random(positionSS * i.xx) - 0.5) * 0.1;
+
     	float3 outColor = currentColor;
 
-    	float rainbowCarryAmount = (random(positionSS * i.xx));
+    	float rainbowCarryAmount = random(positionSS * jitteredI.xx);
     	float radius = _Radius + rainbowCarryAmount * _Thickness;
 
     	//float crossover = 0.3333;
@@ -63,8 +65,8 @@ void RainbowBloom(uint3 dispatchThreadId : SV_DispatchThreadID)
     	outColor *= float3(1, smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount) * (1- smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount)), 1);	
     	outColor *= float3(1, 1, smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount));											
 
-    	uint x = uv.x + radius * cos(i);
-    	uint y = uv.y + radius * sin(i);
+    	uint x = uv.x + radius * cos(jitteredI);
+    	uint y = uv.y + radius * sin(jitteredI);
 
 		_OutputTexture[COORD_TEXTURE2D_X(uint2(x, y))] += outColor;
     }

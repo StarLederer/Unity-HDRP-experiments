@@ -405,10 +405,12 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		}*/
 
 		m_Material.SetTexture("_BloomTexture", m_BloomTexture);
+		m_Material.SetTexture("_BloomTexture", m_BloomTexture);
 		//m_Material.SetTexture("_BloomDirtTexture", dirtTexture);
 		m_Material.SetFloat("_Intensity", intensity.value);
 		//m_Material.SetVector("_BloomParams", new Vector4(transformedIntensity, dirtIntensity, 1f, dirtEnabled));
 		//m_Material.SetVector("_BloomTint", (Vector4)tint);
+		m_Material.SetVector("_RTHandleScale", new Vector2(2, 2));
 		m_Material.SetVector("_BloomBicubicParams", new Vector4(bloomSize.x, bloomSize.y, 1f / bloomSize.x, 1f / bloomSize.y));
 		//m_Material.SetVector("_BloomDirtScaleOffset", dirtTileOffset);
 		m_Material.SetVector("_BloomThreshold", threshold);

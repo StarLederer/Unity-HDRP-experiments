@@ -197,18 +197,18 @@ MonoBehaviour:
   active: 1
   m_AdvancedMode: 0
   radius:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 64
     min: 0
     max: 512
   thicnkess:
     m_OverrideState: 1
-    m_Value: 112
+    m_Value: 53
     min: 1
     max: 300
   bladeCount:
     m_OverrideState: 1
-    m_Value: 58
+    m_Value: 56
     min: 2
     max: 100
   rainbowRGBcrossover:
@@ -218,7 +218,7 @@ MonoBehaviour:
     max: 1
   intensity:
     m_OverrideState: 1
-    m_Value: 0.0003
+    m_Value: 0.0005
     min: 0
     max: 1
 --- !u!114 &8711377374188185572

@@ -80,8 +80,12 @@
         #if 0 // Bilinear
             float3 bloom = SAMPLE_TEXTURE2D_X_LOD(_BloomTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uv), 0.0).xyz;
         #else
-            float3 bloom = LOAD_TEXTURE2D_X(_BloomTexture, uv * 0.5).xyz;
-            //float3 bloom = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_BloomTexture, sampler_LinearClamp), uv * _RTHandleScale.xy, _BloomBicubicParams, _RTHandleScale.xy, unity_StereoEyeIndex).xyz;
+            float3 bloom = LOAD_TEXTURE2D_X(_BloomTexture, uv / _RTHandleScale.xy).xyz;
+            // float3 bloom = SampleTexture2DBicubic(
+            //         TEXTURE2D_X_ARGS(_BloomTexture, sampler_LinearClamp), uv * _RTHandleScale.xy,
+            //         _BloomBicubicParams,
+            //         _RTHandleScale.xy,
+            //         unity_StereoEyeIndex).xyz;
         #endif
 
         //float3 thresholdedColor = QuadraticThreshold(color, 0, float3(0, 0, 0));
