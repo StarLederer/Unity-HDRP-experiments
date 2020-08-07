@@ -1,4 +1,4 @@
-﻿Shader "Hidden/Shader/RainbowBloom"
+﻿Shader "Hidden/Shader/EyeLensScattering"
 {
     HLSLINCLUDE
 

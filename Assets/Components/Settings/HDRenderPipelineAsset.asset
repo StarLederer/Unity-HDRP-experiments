@@ -346,5 +346,5 @@ MonoBehaviour:
   beforeTransparentCustomPostProcesses: []
   beforePostProcessCustomPostProcesses:
   - IrisScattering, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
-  - RainbowBloom, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+  - EyeLensScattering, Assembly-CSharp, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
   afterPostProcessCustomPostProcesses: []

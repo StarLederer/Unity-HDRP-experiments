@@ -8,7 +8,7 @@ using UnityEngine.Assertions;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Serialization;
 
-[Serializable, VolumeComponentMenu("Post-processing/Custom/IrisScattering")]
+[Serializable, VolumeComponentMenu("Post-processing/Human eye/Iris scattering")]
 public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProcessComponent
 {
 	// Effect settings

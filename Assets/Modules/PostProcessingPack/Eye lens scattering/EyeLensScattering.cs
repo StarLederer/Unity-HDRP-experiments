@@ -5,8 +5,8 @@ using UnityEngine.Rendering.HighDefinition;
 using System;
 using System.Collections.Generic;
 
-[Serializable, VolumeComponentMenu("Post-processing/Custom/RainbowBloom")]
-public sealed class RainbowBloom : CustomPostProcessVolumeComponent, IPostProcessComponent
+[Serializable, VolumeComponentMenu("Post-processing/Human eye/Eye lens scattering")]
+public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostProcessComponent
 {
 	[Header("Scattering")]
 	public ClampedFloatParameter radius = new ClampedFloatParameter(64f, 0f, 512f);
@@ -26,7 +26,7 @@ public sealed class RainbowBloom : CustomPostProcessVolumeComponent, IPostProces
 
 	public override CustomPostProcessInjectionPoint injectionPoint => CustomPostProcessInjectionPoint.BeforePostProcess;
 
-	const string kShaderName = "Hidden/Shader/RainbowBloom";
+	const string kShaderName = "Hidden/Shader/EyeLensScattering";
 
 	public override void Setup()
 	{
@@ -34,7 +34,7 @@ public sealed class RainbowBloom : CustomPostProcessVolumeComponent, IPostProces
 		m_Pool = new TargetPool();
 
 		// Compute shader
-		BloomCompute = Resources.Load<ComputeShader>("RainbowBloomCompute");
+		BloomCompute = Resources.Load<ComputeShader>("EyeLensScatteringCompute");
 		clearKernel = BloomCompute.FindKernel("Clear");
 		bloomKernel = BloomCompute.FindKernel("RainbowBloom");
 
@@ -44,7 +44,7 @@ public sealed class RainbowBloom : CustomPostProcessVolumeComponent, IPostProces
 		if (Shader.Find(kShaderName) != null)
 			m_Material = new Material(Shader.Find(kShaderName));
 		else
-			Debug.LogError($"Unable to find shader '{kShaderName}'. Post Process Volume RainbowBloom is unable to load.");
+			Debug.LogError($"Unable to find shader '{kShaderName}'. Post Process Volume EyeLensScattering is unable to load.");
 	}
 
 	public override void Render(CommandBuffer cmd, HDCamera camera, RTHandle source, RTHandle destination)
