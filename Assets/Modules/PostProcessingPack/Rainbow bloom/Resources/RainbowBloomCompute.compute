@@ -11,6 +11,7 @@ TEXTURE2D_X(_InputTexture);
 RW_TEXTURE2D_X(float3, _OutputTexture);
 float _Radius;
 float _Thickness;
+float crossover;
 uint _BladeCount;
 
 #define GROUP_SIZE 8
@@ -49,14 +50,14 @@ void RainbowBloom(uint3 dispatchThreadId : SV_DispatchThreadID)
 
 	float circle = 6.2832; // Precalculated Pi*2
 	float segment = circle / _BladeCount;
-    for(float i = segment; i < circle + segment; i += segment)
+    for(float i = segment; i < circle + segment / 2; i += segment)
     {
     	float3 outColor = currentColor;
 
     	float rainbowCarryAmount = (random(positionSS * i.xx));
     	float radius = _Radius + rainbowCarryAmount * _Thickness;
 
-    	float crossover = 0.3333;
+    	//float crossover = 0.3333;
 
     	outColor *= float3(1 - smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount), 1, 1);										
     	outColor *= float3(1, smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount) * (1- smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount)), 1);	

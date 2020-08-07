@@ -12,6 +12,7 @@ public sealed class RainbowBloom : CustomPostProcessVolumeComponent, IPostProces
 	public ClampedFloatParameter radius = new ClampedFloatParameter(64f, 0f, 512f);
 	public ClampedFloatParameter thicnkess = new ClampedFloatParameter(30f, 1f, 300f);
 	public ClampedIntParameter bladeCount = new ClampedIntParameter(20, 2, 100);
+	public ClampedFloatParameter rainbowRGBcrossover = new ClampedFloatParameter(0.333f, 0f, 1f);
 	[Header("Effect")]
 	public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
 
@@ -59,6 +60,7 @@ public sealed class RainbowBloom : CustomPostProcessVolumeComponent, IPostProces
 		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), radius.value);
 		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), thicnkess.value);
 		cmd.SetComputeIntParam(BloomCompute, Shader.PropertyToID("_BladeCount"), bladeCount.value);
+		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("crossover"), rainbowRGBcrossover.value);
 		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), source);
 		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), buffer);
 		cmd.DispatchCompute(BloomCompute, bloomKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
