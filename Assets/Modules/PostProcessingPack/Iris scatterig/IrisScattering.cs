@@ -88,7 +88,7 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		{
 			//if (!UsesQualitySettings())
 			//{
-				return m_Resolution.value;
+			return m_Resolution.value;
 			//}
 			//else
 			//{
@@ -108,7 +108,7 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		{
 			//if (!UsesQualitySettings())
 			//{
-				return m_HighQualityFiltering.value;
+			return m_HighQualityFiltering.value;
 			//}
 			//else
 			//{
@@ -162,51 +162,38 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		// Set target pool dynamic resolution
 		m_Pool.SetHWDynamicResolutionState(camera);
 
-		// Yoinked
-		// Prbably needs to be gotten rid of
-		//void PoolSource(ref RTHandle src, RTHandle dst)
-		//{
-			//PoolSourceGuard(ref src, dst, colorBuffer);
-		//}
-
-		#region Relevant code from PostProcessSystem
 		// Combined post-processing stack - always runs if postfx is enabled
 		//using (new ProfilingSample(cmd, "Uber", CustomSamplerId.UberPost.GetSampler()))
 		//{
-			//var cs = m_Resources.shaders.uberPostCS;
-			//int kernel = GetUberKernel(cs, featureFlags);
+		//var cs = m_Resources.shaders.uberPostCS;
+		//int kernel = GetUberKernel(cs, featureFlags);
 
-			// Generate the bloom texture
-			//using (new ProfilingSample(cmd, "Bloom", CustomSamplerId.Bloom.GetSampler()))
-			//{
-				DoBloom(cmd, camera, source, m_Material);
-			//}
-
-			// Run
-			//var destination = m_Pool.Get(Vector2.one, k_ColorFormat);
-
-			//bool outputColorLog = m_HDInstance.m_CurrentDebugDisplaySettings.data.fullScreenDebugMode == FullScreenDebugMode.ColorLog;
-			//cmd.SetComputeVectorParam(cs, "_DebugFlags", new Vector4(outputColorLog ? 1 : 0, 0, 0, 0));
-			//cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputTexture"), source);
-			//cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_OutputTexture"), destination);
-			//cmd.DispatchCompute(cs, kernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
-			//m_HDInstance.PushFullScreenDebugTexture(camera, cmd, destination, FullScreenDebugMode.ColorLog);
-
-			// Set draw material properties
-			m_Material.SetFloat("_Intensity", intensity.value);
-			m_Material.SetTexture("_IBloomTexture", m_BloomTexture);
-			m_Material.SetTexture("_InputTexture", source);
-
-			// Cleanup
-			m_Pool.Recycle(m_BloomTexture);
-			m_BloomTexture = null;
-
-			//PoolSource(ref source, destination);
+		// Generate the bloom texture
+		//using (new ProfilingSample(cmd, "Bloom", CustomSamplerId.Bloom.GetSampler()))
+		//{
+		DoBloom(cmd, camera, source, m_Material);
 		//}
-		#endregion
+
+		// Run
+		//var destination = m_Pool.Get(Vector2.one, k_ColorFormat);
+
+		//bool outputColorLog = m_HDInstance.m_CurrentDebugDisplaySettings.data.fullScreenDebugMode == FullScreenDebugMode.ColorLog;
+		//cmd.SetComputeVectorParam(cs, "_DebugFlags", new Vector4(outputColorLog ? 1 : 0, 0, 0, 0));
+		//cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputTexture"), source);
+		//cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_OutputTexture"), destination);
+		//cmd.DispatchCompute(cs, kernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		//m_HDInstance.PushFullScreenDebugTexture(camera, cmd, destination, FullScreenDebugMode.ColorLog);
+
+		//PoolSource(ref source, destination);
+		//}
 
 		// Draw with material
+		m_Material.SetTexture("_InputTexture", source);
 		HDUtils.DrawFullScreen(cmd, m_Material, destination);
+
+		// Cleanup
+		m_Pool.Recycle(m_BloomTexture);
+		m_BloomTexture = null;
 	}
 
 	public override void Cleanup()
@@ -347,6 +334,8 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		kernel = cs.FindKernel(highQualityFiltering ? "KMainHighQ" : "KMainLowQ");
 
 		float transformedScatter = Mathf.Lerp(0.05f, 0.95f, scatter.value); //scatter
+		var highSize = Vector2Int.one;
+		var lowSize = Vector2Int.one;
 
 		for (int i = mipCount - 2; i >= 0; i--)
 		{
@@ -354,8 +343,8 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 			var srcLow = low[i + 1];
 			var srcHigh = m_BloomMipsDown[i];
 			var dst = m_BloomMipsUp[i];
-			var highSize = mipSizes[i];
-			var lowSize = mipSizes[i + 1];
+			highSize = mipSizes[i];
+			lowSize = mipSizes[i + 1];
 
 			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputLowTexture"), srcLow);
 			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputHighTexture"), srcHigh);
@@ -363,19 +352,26 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 			cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_Params"), new Vector4(transformedScatter, 0f, 0f, 0f));
 			cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_BloomBicubicParams"), new Vector4(lowSize.x, lowSize.y, 1f / lowSize.x, 1f / lowSize.y));
 			cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_TexelSize"), new Vector4(highSize.x, highSize.y, 1f / highSize.x, 1f / highSize.y));
+			//Debug.Log("...");
+			//Debug.Log(new Vector4(lowSize.x, lowSize.y, 1f / lowSize.x, 1f / lowSize.y));
+			//Debug.Log(new Vector4(highSize.x, highSize.y, 1f / highSize.x, 1f / highSize.y));
 			DispatchWithGuardBands(cs, kernel, highSize);
-		}
-
-		// Cleanup
-		for (int i = 0; i < mipCount; i++)
-		{
-			m_Pool.Recycle(m_BloomMipsDown[i]);
-			if (i > 0) m_Pool.Recycle(m_BloomMipsUp[i]);
 		}
 
 		// Set uber data
 		var bloomSize = mipSizes[0];
-		m_BloomTexture = m_BloomMipsUp[0];
+		//m_BloomTexture = m_BloomMipsUp[0];
+		m_BloomTexture = m_Pool.Get(Vector2.one, k_ColorFormat);
+
+		lowSize *= (int)resolution;
+		highSize *= (int)resolution;
+
+		kernel = cs.FindKernel("Last");
+		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputLowTexture"), m_BloomMipsUp[0]);
+		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_OutputTexture"), m_BloomTexture);
+		cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_BloomBicubicParams"), new Vector4(lowSize.x, lowSize.y, 1f / lowSize.x, 1f / lowSize.y));
+		cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_TexelSize"), new Vector4(highSize.x, highSize.y, 1f / highSize.x, 1f / highSize.y));
+		DispatchWithGuardBands(cs, kernel, highSize);
 
 		float transformedIntensity = Mathf.Pow(2f, intensity.value) - 1f; // Makes intensity easier to control
 		var transformedTint = tint.value.linear;
@@ -405,7 +401,6 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		}*/
 
 		m_Material.SetTexture("_BloomTexture", m_BloomTexture);
-		m_Material.SetTexture("_BloomTexture", m_BloomTexture);
 		//m_Material.SetTexture("_BloomDirtTexture", dirtTexture);
 		m_Material.SetFloat("_Intensity", intensity.value);
 		//m_Material.SetVector("_BloomParams", new Vector4(transformedIntensity, dirtIntensity, 1f, dirtEnabled));
@@ -422,6 +417,13 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		//cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_BloomBicubicParams"), new Vector4(bloomSize.x, bloomSize.y, 1f / bloomSize.x, 1f / bloomSize.y));
 		//cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_BloomDirtScaleOffset"), dirtTileOffset);
 		//cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_BloomThreshold"), threshold);
+
+		// Cleanup
+		for (int i = 0; i < mipCount; i++)
+		{
+			m_Pool.Recycle(m_BloomMipsDown[i]);
+			if (i > 0) m_Pool.Recycle(m_BloomMipsUp[i]);
+		}
 	}
 
 	#endregion

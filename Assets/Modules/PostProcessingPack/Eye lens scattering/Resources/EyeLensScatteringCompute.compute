@@ -11,7 +11,6 @@ TEXTURE2D_X(_InputTexture);
 RW_TEXTURE2D_X(float3, _OutputTexture);
 float _Radius;
 float _Thickness;
-float crossover;
 uint _BladeCount;
 
 #define GROUP_SIZE 8
@@ -59,15 +58,15 @@ void RainbowBloom(uint3 dispatchThreadId : SV_DispatchThreadID)
     	float rainbowCarryAmount = random(positionSS * jitteredI.xx);
     	float radius = _Radius + rainbowCarryAmount * _Thickness;
 
-    	//float crossover = 0.3333;
+    	float crossover = 0.3333;
 
     	outColor *= float3(1 - smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount), 1, 1);										
-    	outColor *= float3(1, smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount) * (1- smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount)), 1);	
+    	outColor *= float3(1, smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount) * (1 - smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount)), 1);	
     	outColor *= float3(1, 1, smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount));											
 
     	uint x = uv.x + radius * cos(jitteredI);
     	uint y = uv.y + radius * sin(jitteredI);
 
-		_OutputTexture[COORD_TEXTURE2D_X(uint2(x, y))] += outColor;
+		_OutputTexture[COORD_TEXTURE2D_X(uint2(x, y))] += outColor / _BladeCount;
     }
 }

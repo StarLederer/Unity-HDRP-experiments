@@ -2,8 +2,10 @@
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Assertions;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 [Serializable, VolumeComponentMenu("Post-processing/Human eye/Eye lens scattering")]
 public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostProcessComponent
@@ -12,7 +14,6 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 	public ClampedFloatParameter radius = new ClampedFloatParameter(64f, 0f, 512f);
 	public ClampedFloatParameter thicnkess = new ClampedFloatParameter(30f, 1f, 300f);
 	public ClampedIntParameter bladeCount = new ClampedIntParameter(20, 2, 100);
-	public ClampedFloatParameter rainbowRGBcrossover = new ClampedFloatParameter(0.333f, 0f, 1f);
 	[Header("Effect")]
 	public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
 
@@ -38,9 +39,6 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 		clearKernel = BloomCompute.FindKernel("Clear");
 		bloomKernel = BloomCompute.FindKernel("RainbowBloom");
 
-		// A render texture to buffer stuff
-		buffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
-
 		if (Shader.Find(kShaderName) != null)
 			m_Material = new Material(Shader.Find(kShaderName));
 		else
@@ -53,6 +51,7 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 			return;
 
 		// Clear the scatter buffer
+		buffer = m_Pool.Get(Vector2.one, GraphicsFormat.B10G11R11_UFloatPack32);
 		cmd.SetComputeTextureParam(BloomCompute, clearKernel, Shader.PropertyToID("_OutputTexture"), buffer);
 		cmd.DispatchCompute(BloomCompute, clearKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
@@ -60,7 +59,6 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), radius.value);
 		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), thicnkess.value);
 		cmd.SetComputeIntParam(BloomCompute, Shader.PropertyToID("_BladeCount"), bladeCount.value);
-		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("crossover"), rainbowRGBcrossover.value);
 		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), source);
 		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), buffer);
 		cmd.DispatchCompute(BloomCompute, bloomKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
@@ -70,16 +68,22 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 		m_Material.SetTexture("_InputTexture", source);
 		m_Material.SetTexture("_BloomTexture", buffer);
 		HDUtils.DrawFullScreen(cmd, m_Material, destination);
+
+		// Cleanup
+		m_Pool.Recycle(buffer);
+		buffer = null;
 	}
 
 	public override void Cleanup()
 	{
 		CoreUtils.Destroy(m_Material);
+		m_Pool.Cleanup();
 	}
 
-	#region Render Target Management Utility
+	#region Render Target Management Utilities
 
-	// Copied and trimmed from PostProcessSystem.cs
+	// Yoinked straight out of PostProcessSystem
+
 	// Quick utility class to manage temporary render targets for post-processing and keep the
 	// code readable.
 	class TargetPool
@@ -143,6 +147,11 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 
 		public RTHandle Get(in Vector2 scaleFactor, GraphicsFormat format, bool mipmap = false)
 		{
+			var hashCode = ComputeHashCode(scaleFactor.x, scaleFactor.y, (int)format, mipmap);
+
+			if (m_Targets.TryGetValue(hashCode, out var stack) && stack.Count > 0)
+				return stack.Pop();
+
 			var rt = RTHandles.Alloc(
 				scaleFactor, TextureXR.slices, DepthBits.None, colorFormat: format, dimension: TextureXR.dimension,
 				useMipMap: mipmap, enableRandomWrite: true, useDynamicScale: true, name: "Post-processing Target Pool " + m_Tracker
@@ -150,6 +159,40 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 
 			m_Tracker++;
 			return rt;
+		}
+
+		public void Recycle(RTHandle rt)
+		{
+			Assert.IsNotNull(rt);
+			var hashCode = ComputeHashCode(rt.scaleFactor.x, rt.scaleFactor.y, (int)rt.rt.graphicsFormat, rt.rt.useMipMap);
+
+			if (!m_Targets.TryGetValue(hashCode, out var stack))
+			{
+				stack = new Stack<RTHandle>();
+				m_Targets.Add(hashCode, stack);
+			}
+
+			stack.Push(rt);
+		}
+
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
+		int ComputeHashCode(float scaleX, float scaleY, int format, bool mipmap)
+		{
+			int hashCode = 17;
+
+			unchecked
+			{
+				unsafe
+				{
+					hashCode = hashCode * 23 + *((int*)&scaleX);
+					hashCode = hashCode * 23 + *((int*)&scaleY);
+				}
+
+				hashCode = hashCode * 23 + format;
+				hashCode = hashCode * 23 + (mipmap ? 1 : 0);
+			}
+
+			return hashCode;
 		}
 	}
 
