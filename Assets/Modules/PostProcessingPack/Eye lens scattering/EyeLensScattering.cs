@@ -65,6 +65,7 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 
 		// Combine
 		m_Material.SetFloat("_Intensity", intensity.value);
+		m_Material.SetInt("_BladeCount", bladeCount.value);
 		m_Material.SetTexture("_InputTexture", source);
 		m_Material.SetTexture("_BloomTexture", buffer);
 		HDUtils.DrawFullScreen(cmd, m_Material, destination);

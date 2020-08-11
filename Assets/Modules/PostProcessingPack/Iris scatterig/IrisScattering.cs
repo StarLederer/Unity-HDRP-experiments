@@ -29,6 +29,7 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 	readonly RTHandle[] m_BloomMipsDown = new RTHandle[k_MaxBloomMipCount + 1];
 	readonly RTHandle[] m_BloomMipsUp = new RTHandle[k_MaxBloomMipCount + 1];
 	RTHandle m_BloomTexture;
+	RTHandle m_HaloTexture;
 
 	// Garbage
 	// TODO: Get rid of the material
@@ -47,6 +48,12 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 	/// </summary>
 	[Tooltip("Controls the strength of the bloom filter.")]
 	public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
+
+	/// <summary>
+	/// Controls the strength of the bloom filter.
+	/// </summary>
+	[Tooltip("Controls the strength of the lenticualar halo.")]
+	public ClampedFloatParameter lenticularHaloIntensity = new ClampedFloatParameter(0f, 0f, 1f);
 
 	/// <summary>
 	/// Controls the extent of the veiling effect.
@@ -358,7 +365,25 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 			DispatchWithGuardBands(cs, kernel, highSize);
 		}
 
-		// Set uber data
+		// Lenticular halo
+		ComputeShader BloomCompute = Resources.Load<ComputeShader>("EyeLensScatteringCompute");
+		int bloomKernel = BloomCompute.FindKernel("RainbowBloom");
+		switch (resolution)
+		{
+			case BloomResolution.Half:
+				m_HaloTexture = m_Pool.Get(new Vector2(0.5f, 0.5f), k_ColorFormat);
+				break;
+			default:
+				m_HaloTexture = m_Pool.Get(new Vector2(0.25f, 0.25f), k_ColorFormat);
+				break;
+		}
+		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), 80f);
+		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), 50f);
+		cmd.SetComputeIntParam(BloomCompute, Shader.PropertyToID("_BladeCount"), 54);
+		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), m_BloomMipsUp[0]);
+		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), m_HaloTexture);
+		DispatchWithGuardBands(BloomCompute, bloomKernel, highSize);
+
 		var bloomSize = mipSizes[0];
 		//m_BloomTexture = m_BloomMipsUp[0];
 		m_BloomTexture = m_Pool.Get(Vector2.one, k_ColorFormat);
@@ -366,14 +391,22 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		lowSize *= (int)resolution;
 		highSize *= (int)resolution;
 
+		// Upscaling
 		kernel = cs.FindKernel("Last");
 		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputLowTexture"), m_BloomMipsUp[0]);
+		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputHaloTexture"), m_HaloTexture);
 		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_OutputTexture"), m_BloomTexture);
+		cmd.SetComputeFloatParam(cs, Shader.PropertyToID("_LenticularHaloIntensity"), lenticularHaloIntensity.value);
 		cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_BloomBicubicParams"), new Vector4(lowSize.x, lowSize.y, 1f / lowSize.x, 1f / lowSize.y));
 		cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_TexelSize"), new Vector4(highSize.x, highSize.y, 1f / highSize.x, 1f / highSize.y));
 		DispatchWithGuardBands(cs, kernel, highSize);
 
+		// Halo cleanup
+		m_Pool.Recycle(m_HaloTexture);
+		m_HaloTexture = null;
+
 		float transformedIntensity = Mathf.Pow(2f, intensity.value) - 1f; // Makes intensity easier to control
+		transformedIntensity += 0.02f * ((Mathf.Sin(Time.time*6) + Mathf.Sin(Time.time * 12f) + Mathf.Sin(Time.time*23f)) / 3f);
 		var transformedTint = tint.value.linear;
 		var luma = ColorUtils.Luminance(transformedTint);
 		transformedTint = luma > 0f ? transformedTint * (1f / luma) : Color.white;
@@ -400,9 +433,10 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 			dirtTileOffset.w = (1f - dirtTileOffset.y) * 0.5f;
 		}*/
 
+		// Set uber data
 		m_Material.SetTexture("_BloomTexture", m_BloomTexture);
 		//m_Material.SetTexture("_BloomDirtTexture", dirtTexture);
-		m_Material.SetFloat("_Intensity", intensity.value);
+		m_Material.SetFloat("_Intensity", transformedIntensity);
 		//m_Material.SetVector("_BloomParams", new Vector4(transformedIntensity, dirtIntensity, 1f, dirtEnabled));
 		//m_Material.SetVector("_BloomTint", (Vector4)tint);
 		m_Material.SetVector("_RTHandleScale", new Vector2(2, 2));
@@ -497,9 +531,14 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		{
 			var hashCode = ComputeHashCode(scaleFactor.x, scaleFactor.y, (int)format, mipmap);
 
-			if (m_Targets.TryGetValue(hashCode, out var stack) && stack.Count > 0)
-				return stack.Pop();
+			if (m_Targets.TryGetValue(hashCode, out var stack))
+				if (stack.Count > 0)
+					return stack.Pop();
+				else Debug.Log("Stack empty, have to create a new RT");
+			else Debug.Log("Stack does not exist, have to create a new RT");
+			Debug.Log("Scale: " + scaleFactor.ToString("F2"));
 
+			//Debug.Log("RTHandle not available, creating one. Scale factor: " + scaleFactor.ToString("F2"));
 			var rt = RTHandles.Alloc(
 				scaleFactor, TextureXR.slices, DepthBits.None, colorFormat: format, dimension: TextureXR.dimension,
 				useMipMap: mipmap, enableRandomWrite: true, useDynamicScale: true, name: "Post-processing Target Pool " + m_Tracker
