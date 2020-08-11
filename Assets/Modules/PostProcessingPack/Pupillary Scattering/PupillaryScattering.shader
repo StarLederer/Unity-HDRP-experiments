@@ -1,4 +1,4 @@
-﻿Shader "Hidden/Shader/IrisScattering"
+﻿Shader "Hidden/Shader/PupillaryScattering"
 {
     HLSLINCLUDE
 

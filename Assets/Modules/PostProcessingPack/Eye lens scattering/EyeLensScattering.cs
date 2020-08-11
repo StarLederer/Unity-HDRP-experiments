@@ -37,7 +37,7 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 		// Compute shader
 		BloomCompute = Resources.Load<ComputeShader>("EyeLensScatteringCompute");
 		clearKernel = BloomCompute.FindKernel("Clear");
-		bloomKernel = BloomCompute.FindKernel("RainbowBloom");
+		bloomKernel = BloomCompute.FindKernel("RainbowStripeBloom");
 
 		if (Shader.Find(kShaderName) != null)
 			m_Material = new Material(Shader.Find(kShaderName));
