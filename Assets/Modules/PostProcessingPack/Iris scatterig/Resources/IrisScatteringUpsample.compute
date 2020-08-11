@@ -18,6 +18,7 @@ SAMPLER(sampler_LinearClamp);
 
 CBUFFER_START(cb0)
     float _LenticularHaloIntensity;                
+    uint _LenticularHaloBladeCount;                
     float4 _Params;                 // x: scatter, yzw: unused
     float4 _BloomBicubicParams;     // xy: low src size, zw: low src texel size
     float4 _TexelSize;              // xy; high src size, zw: high src texel size
@@ -61,7 +62,7 @@ void Last(uint3 dispatchThreadId : SV_DispatchThreadID)
     float3 lowRes = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_InputLowTexture, sampler_LinearClamp), uv, _BloomBicubicParams, maxCoord, unity_StereoEyeIndex).xyz;
     float3 halo = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_InputHaloTexture, sampler_LinearClamp), uv, _BloomBicubicParams, maxCoord, unity_StereoEyeIndex).xyz;
 
-    float3 output = lerp(lowRes, halo, _LenticularHaloIntensity);
+    float3 output = lerp(lowRes, halo / _LenticularHaloBladeCount, _LenticularHaloIntensity);
 
     // Guard bands
     output *= all(dispatchThreadId.xy < uint2(_TexelSize.xy));

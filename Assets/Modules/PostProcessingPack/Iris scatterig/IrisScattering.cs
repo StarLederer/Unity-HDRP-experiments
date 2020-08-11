@@ -397,6 +397,7 @@ public sealed class IrisScattering : CustomPostProcessVolumeComponent, IPostProc
 		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputHaloTexture"), m_HaloTexture);
 		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_OutputTexture"), m_BloomTexture);
 		cmd.SetComputeFloatParam(cs, Shader.PropertyToID("_LenticularHaloIntensity"), lenticularHaloIntensity.value);
+		cmd.SetComputeIntParam(cs, Shader.PropertyToID("_LenticularHaloBladeCount"), 54);
 		cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_BloomBicubicParams"), new Vector4(lowSize.x, lowSize.y, 1f / lowSize.x, 1f / lowSize.y));
 		cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_TexelSize"), new Vector4(highSize.x, highSize.y, 1f / highSize.x, 1f / highSize.y));
 		DispatchWithGuardBands(cs, kernel, highSize);

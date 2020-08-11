@@ -80,7 +80,7 @@ MonoBehaviour:
     max: 1
   lenticularHaloIntensity:
     m_OverrideState: 1
-    m_Value: 0.25
+    m_Value: 0.254
     min: 0
     max: 1
   scatter:
