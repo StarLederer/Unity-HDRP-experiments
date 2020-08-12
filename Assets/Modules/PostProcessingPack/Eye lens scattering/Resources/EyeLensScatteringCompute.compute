@@ -11,6 +11,7 @@
 
 TEXTURE2D_X(_InputTexture);
 RW_TEXTURE2D_X(float3, _OutputTexture);
+float4 _TexelSize;
 float _Radius;
 float _Thickness;
 float _Iteration;
@@ -123,25 +124,27 @@ void RainbowStripeBloomSingleWrite(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     UNITY_XR_ASSIGN_VIEW_INDEX(dispatchThreadId.z);
     PositionInputs posInputs = GetPositionInput(float2(dispatchThreadId.xy), float2(1, 1), uint2(GROUP_SIZE, GROUP_SIZE));
-    uint2 positionSS = COORD_TEXTURE2D_X(posInputs.positionSS).xy;
-    //positionSS = uint2(max(1, positionSS.x), max(1, positionSS.y));
     float2 uv = posInputs.positionNDC;
     
-    float3 currentColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
-    float jitter = (random(positionSS) - 0.5) * 2 * 6.2832; // Precalculated Pi*2
+    float3 currentColor = LOAD_TEXTURE2D_X(_InputTexture, uv).xyz;
+    float jitter = random(uv) * 6.2832; // Precalculated Pi*2
 
     float3 outColor = currentColor;
 
     float rainbowCarryAmount = (_Iteration + 1) / _Thickness;
     float radius = _Radius + _Iteration;
 
-    const float crossover = 0.3333;
-    outColor *= float3(1 - smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount), 1, 1);                                       
-    outColor *= float3(1, smoothstep(0.3333-crossover, 0.3333+crossover, rainbowCarryAmount) * (1 - smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount)), 1);    
-    outColor *= float3(1, 1, smoothstep(0.6666-crossover, 0.6666+crossover, rainbowCarryAmount));                                           
+    //outColor *= float3(1 - smoothstep(0.3333-0.3333, 0.3333+0.3333, rainbowCarryAmount), 1, 1);
+    //outColor *= float3(1, smoothstep(0.3333-0.3333, 0.3333+0.3333, rainbowCarryAmount) * (1 - smoothstep(0.6666-0.3333, 0.6666+0.3333, rainbowCarryAmount)), 1);
+    //outColor *= float3(1, 1, smoothstep(0.6666-0.3333, 0.6666+0.3333, rainbowCarryAmount));
+
+    outColor *= float3(smoothstep(0.6666-0.3333, 0.6666+0.3333, rainbowCarryAmount), 1, 1);
+    outColor *= float3(1, smoothstep(0.3333-0.3333, 0.3333+0.3333, rainbowCarryAmount) * (1 - smoothstep(0.6666-0.3333, 0.6666+0.3333, rainbowCarryAmount)), 1);
+    outColor *= float3(1, 1, 1 - smoothstep(0.3333-0.3333, 0.3333+0.3333, rainbowCarryAmount));
 
     float x = uv.x + radius * cos(jitter);
     float y = uv.y + radius * sin(jitter);
 
-    _OutputTexture[COORD_TEXTURE2D_X(float2(x, y))] += outColor * 3 / _Thickness;
+    outColor *= all(outColor < uint2(_TexelSize.xy));
+    _OutputTexture[COORD_TEXTURE2D_X(float2(x, y))] += outColor / _Thickness;
 }

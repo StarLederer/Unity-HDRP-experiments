@@ -18,6 +18,7 @@
 
 TEXTURE2D_X(_InputTexture);
 TEXTURE2D_X(_BloomTexture);
+TEXTURE2D_X(_BloomHaloTexture);
 TEXTURE2D(_BloomDirtTexture);
 TEXTURE2D(_ChromaSpectralLut);
 TEXTURE3D(_LogLut3D);
@@ -155,7 +156,10 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
         float3 bloom = SAMPLE_TEXTURE2D_X_LOD(_BloomTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uvDistorted), 0.0).xyz;
         #else
         float3 bloom = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_BloomTexture, sampler_LinearClamp), uvDistorted * _RTHandleScale.xy, _BloomBicubicParams, _RTHandleScale.xy, unity_StereoEyeIndex).xyz;
+        float3 halo = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_BloomHaloTexture, sampler_LinearClamp), uvDistorted * _RTHandleScale.xy, _BloomBicubicParams, _RTHandleScale.xy, unity_StereoEyeIndex).xyz;
         #endif
+
+        bloom = lerp(bloom, halo, DirtIntensity);
 
         float3 thresholdedColor = QuadraticThreshold(color, _BloomThreshold.x, _BloomThreshold.yzw);
         color = lerp(color, (color - thresholdedColor) + (bloom * BloomTint), BloomIntensity);

@@ -40,6 +40,24 @@ namespace UnityEngine.Rendering.HighDefinition
         public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
 
         /// <summary>
+        /// Controls the strength of lenticular halo.
+        /// </summary>
+        [Tooltip("Controls the strength of lenticular halo.")]
+        public ClampedFloatParameter haloIntensity = new ClampedFloatParameter(0f, 0f, 1f);
+
+        /// <summary>
+        /// Controls the strength of the bloom filter.
+        /// </summary>
+        [Tooltip("Controls the strength of lenticular halo.")]
+        public ClampedFloatParameter haloRadius = new ClampedFloatParameter(0f, 0f, 300f);
+
+        /// <summary>
+        /// Controls the strength of the bloom filter.
+        /// </summary>
+        [Tooltip("Controls the strength of lenticular halo.")]
+        public ClampedFloatParameter haloThickness = new ClampedFloatParameter(0f, 0f, 100f);
+
+        /// <summary>
         /// Controls the extent of the veiling effect.
         /// </summary>
         [Tooltip("Controls the extent of the veiling effect.")]

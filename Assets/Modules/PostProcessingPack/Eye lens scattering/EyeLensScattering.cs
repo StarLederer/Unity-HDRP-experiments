@@ -56,14 +56,15 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 		cmd.DispatchCompute(BloomCompute, clearKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Haloes
+		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), radius.value);
+		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), thicnkess.value);
+		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), source);
+		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), buffer);
+
 		for (float i = 0; i < thicnkess.value; i += 2)
 		{
-			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), radius.value);
-			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), thicnkess.value);
-			//cmd.SetComputeIntParam(BloomCompute, Shader.PropertyToID("_BladeCount"), bladeCount.value);
+			
 			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Iteration"), i);
-			cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), source);
-			cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), buffer);
 			cmd.DispatchCompute(BloomCompute, bloomKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 		}
 

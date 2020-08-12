@@ -44,7 +44,8 @@
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
         uint2 positionSS = input.texcoord * _ScreenSize.xy;
-        return float4(lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz, LOAD_TEXTURE2D_X(_BloomTexture, positionSS), _Intensity).xyz, 1);
+        //return float4(lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz, LOAD_TEXTURE2D_X(_BloomTexture, positionSS), _Intensity).xyz, 1);
+        return float4((LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz + LOAD_TEXTURE2D_X(_BloomTexture, positionSS) * _Intensity).xyz, 1.0);
     }
 
     ENDHLSL

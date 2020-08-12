@@ -114,79 +114,8 @@ MonoBehaviour:
   components:
   - {fileID: 6640133647794636954}
   - {fileID: 8711377374188185572}
-  - {fileID: 4664997309735986215}
   - {fileID: 4155987798732539183}
-  - {fileID: 3520708363683704482}
---- !u!114 &3520708363683704482
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bb78c4813fccd3f43a5ed48292c8520e, type: 3}
-  m_Name: PupillaryScattering
-  m_EditorClassIdentifier: 
-  active: 0
-  m_AdvancedMode: 0
-  lenticularHaloRadius:
-    m_OverrideState: 1
-    m_Value: 88
-    min: 0
-    max: 512
-  lenticularHaloThicnkess:
-    m_OverrideState: 1
-    m_Value: 30
-    min: 1
-    max: 300
-  lenticularHaloBladeCount:
-    m_OverrideState: 1
-    m_Value: 2
-    min: 2
-    max: 100
-  threshold:
-    m_OverrideState: 0
-    m_Value: 0
-    min: 0
-  intensity:
-    m_OverrideState: 1
-    m_Value: 0.221
-    min: 0
-    max: 1
-  lenticularHaloIntensity:
-    m_OverrideState: 1
-    m_Value: 0.352
-    min: 0
-    max: 1
-  scatter:
-    m_OverrideState: 1
-    m_Value: 0.85
-    min: 0
-    max: 1
-  tint:
-    m_OverrideState: 0
-    m_Value: {r: 1, g: 1, b: 1, a: 1}
-    hdr: 0
-    showAlpha: 0
-    showEyeDropper: 1
-  dirtTexture:
-    m_OverrideState: 0
-    m_Value: {fileID: 0}
-  dirtIntensity:
-    m_OverrideState: 0
-    m_Value: 0
-    min: 0
-  anamorphic:
-    m_OverrideState: 0
-    m_Value: 1
-  m_Resolution:
-    m_OverrideState: 0
-    m_Value: 2
-  m_HighQualityFiltering:
-    m_OverrideState: 0
-    m_Value: 1
+  - {fileID: 4664997309735986215}
 --- !u!114 &4155987798732539183
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -200,7 +129,7 @@ MonoBehaviour:
   m_Name: Bloom
   m_EditorClassIdentifier: 
   active: 1
-  m_AdvancedMode: 0
+  m_AdvancedMode: 1
   quality:
     m_OverrideState: 0
     m_Value: 1
@@ -210,12 +139,27 @@ MonoBehaviour:
     min: 0
   intensity:
     m_OverrideState: 1
-    m_Value: 0.357
+    m_Value: 0.5
     min: 0
     max: 1
+  haloIntensity:
+    m_OverrideState: 1
+    m_Value: 0.05
+    min: 0
+    max: 1
+  haloRadius:
+    m_OverrideState: 1
+    m_Value: 160
+    min: 0
+    max: 300
+  haloThickness:
+    m_OverrideState: 1
+    m_Value: 30
+    min: 0
+    max: 100
   scatter:
     m_OverrideState: 1
-    m_Value: 0.754
+    m_Value: 0.762
     min: 0
     max: 1
   tint:
@@ -250,13 +194,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: f1ac484824ceb2e499b7cce2f52932d9, type: 3}
-  m_Name: RainbowBloom
+  m_Name: EyeLensScattering
   m_EditorClassIdentifier: 
   active: 1
   m_AdvancedMode: 0
   radius:
     m_OverrideState: 1
-    m_Value: 170
+    m_Value: 160
     min: 0
     max: 512
   thicnkess:
@@ -266,7 +210,7 @@ MonoBehaviour:
     max: 300
   intensity:
     m_OverrideState: 1
-    m_Value: 0.03
+    m_Value: 0.05
     min: 0
     max: 1
 --- !u!114 &6640133647794636954

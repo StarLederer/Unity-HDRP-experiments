@@ -1,4 +1,4 @@
-using UnityEditor.Rendering;
+/*using UnityEditor.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering.HighDefinition;
 
@@ -9,6 +9,7 @@ namespace UnityEditor.Rendering.HighDefinition
     {
         SerializedDataParameter m_Threshold;
         SerializedDataParameter m_Intensity;
+        SerializedDataParameter m_HaloIntensity;
         SerializedDataParameter m_Scatter;
         SerializedDataParameter m_Tint;
         SerializedDataParameter m_DirtTexture;
@@ -29,6 +30,7 @@ namespace UnityEditor.Rendering.HighDefinition
 
             m_Threshold = Unpack(o.Find(x => x.threshold));
             m_Intensity = Unpack(o.Find(x => x.intensity));
+            m_HaloIntensity = Unpack(o.Find(x => x.haloIntensity));
             m_Scatter = Unpack(o.Find(x => x.scatter));
             m_Tint = Unpack(o.Find(x => x.tint));
             m_DirtTexture = Unpack(o.Find(x => x.dirtTexture));
@@ -46,6 +48,7 @@ namespace UnityEditor.Rendering.HighDefinition
             EditorGUILayout.LabelField("Bloom", EditorStyles.miniLabel);
             PropertyField(m_Threshold);
             PropertyField(m_Intensity);
+            PropertyField(m_HaloIntensity);
             PropertyField(m_Scatter);
             PropertyField(m_Tint);
 
@@ -66,4 +69,4 @@ namespace UnityEditor.Rendering.HighDefinition
             }
         }
     }
-}
+}*/

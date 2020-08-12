@@ -739,6 +739,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public static readonly int _BloomParams                    = Shader.PropertyToID("_BloomParams");
         public static readonly int _BloomTint                      = Shader.PropertyToID("_BloomTint");
         public static readonly int _BloomTexture                   = Shader.PropertyToID("_BloomTexture");
+        public static readonly int _BloomHaloTexture               = Shader.PropertyToID("_BloomHaloTexture");
         public static readonly int _BloomDirtTexture               = Shader.PropertyToID("_BloomDirtTexture");
         public static readonly int _BloomDirtScaleOffset           = Shader.PropertyToID("_BloomDirtScaleOffset");
         public static readonly int _InputLowTexture                = Shader.PropertyToID("_InputLowTexture");
