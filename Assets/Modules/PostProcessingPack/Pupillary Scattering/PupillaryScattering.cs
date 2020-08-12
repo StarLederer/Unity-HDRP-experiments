@@ -388,13 +388,16 @@ public sealed class PupillaryScattering : CustomPostProcessVolumeComponent, IPos
 				break;
 		}
 		ComputeShader BloomCompute = Resources.Load<ComputeShader>("EyeLensScatteringCompute");
-		int bloomKernel = BloomCompute.FindKernel("RainbowStripeBloom");
-		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), lenticularHaloRadius.value / (float) resolution);
-		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), lenticularHaloThicnkess.value / (float)resolution);
-		cmd.SetComputeIntParam(BloomCompute, Shader.PropertyToID("_BladeCount"), lenticularHaloBladeCount.value);
-		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), m_BloomMipsUp[0]);
-		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), haloTexture);
-		DispatchWithGuardBands(BloomCompute, bloomKernel, highSize);
+		int bloomKernel = BloomCompute.FindKernel("RainbowStripeBloomSingleWrite");
+		for (float i = 0; i < lenticularHaloThicnkess.value / (float)resolution; i += 1)
+		{
+			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), lenticularHaloRadius.value / (float)resolution);
+			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), lenticularHaloThicnkess.value / (float)resolution);
+			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Iteration"), i);
+			cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), m_BloomMipsUp[0]);
+			cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), haloTexture);
+			DispatchWithGuardBands(BloomCompute, bloomKernel, highSize);
+		}
 
 		kernel = cs.FindKernel("Last");
 		cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_InputLowTexture"), m_BloomMipsUp[0]);

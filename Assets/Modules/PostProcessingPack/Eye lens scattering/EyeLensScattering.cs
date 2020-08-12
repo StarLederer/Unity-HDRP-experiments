@@ -13,7 +13,7 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 	[Header("Scattering")]
 	public ClampedFloatParameter radius = new ClampedFloatParameter(64f, 0f, 512f);
 	public ClampedFloatParameter thicnkess = new ClampedFloatParameter(30f, 1f, 300f);
-	public ClampedIntParameter bladeCount = new ClampedIntParameter(20, 2, 100);
+	//public ClampedIntParameter bladeCount = new ClampedIntParameter(20, 2, 100);
 	[Header("Effect")]
 	public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
 
@@ -37,7 +37,7 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 		// Compute shader
 		BloomCompute = Resources.Load<ComputeShader>("EyeLensScatteringCompute");
 		clearKernel = BloomCompute.FindKernel("Clear");
-		bloomKernel = BloomCompute.FindKernel("RainbowStripeBloom");
+		bloomKernel = BloomCompute.FindKernel("RainbowStripeBloomSingleWrite");
 
 		if (Shader.Find(kShaderName) != null)
 			m_Material = new Material(Shader.Find(kShaderName));
@@ -56,16 +56,20 @@ public sealed class EyeLensScattering : CustomPostProcessVolumeComponent, IPostP
 		cmd.DispatchCompute(BloomCompute, clearKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
 
 		// Haloes
-		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), radius.value);
-		cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), thicnkess.value);
-		cmd.SetComputeIntParam(BloomCompute, Shader.PropertyToID("_BladeCount"), bladeCount.value);
-		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), source);
-		cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), buffer);
-		cmd.DispatchCompute(BloomCompute, bloomKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		for (float i = 0; i < thicnkess.value; i += 2)
+		{
+			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), radius.value);
+			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), thicnkess.value);
+			//cmd.SetComputeIntParam(BloomCompute, Shader.PropertyToID("_BladeCount"), bladeCount.value);
+			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Iteration"), i);
+			cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_InputTexture"), source);
+			cmd.SetComputeTextureParam(BloomCompute, bloomKernel, Shader.PropertyToID("_OutputTexture"), buffer);
+			cmd.DispatchCompute(BloomCompute, bloomKernel, (camera.actualWidth + 7) / 8, (camera.actualHeight + 7) / 8, camera.viewCount);
+		}
 
 		// Combine
 		m_Material.SetFloat("_Intensity", intensity.value);
-		m_Material.SetInt("_BladeCount", bladeCount.value);
+		//m_Material.SetInt("_BladeCount", bladeCount.value);
 		m_Material.SetTexture("_InputTexture", source);
 		m_Material.SetTexture("_BloomTexture", buffer);
 		HDUtils.DrawFullScreen(cmd, m_Material, destination);

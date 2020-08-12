@@ -36,7 +36,6 @@
 
     // List of properties to control your post process effect
     float _Intensity;
-    uint _BladeCount;
     TEXTURE2D_X(_InputTexture);
     TEXTURE2D_X(_BloomTexture);
 
@@ -44,13 +43,8 @@
     float4 CustomPostProcess(Varyings input) : SV_Target
     {
         UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
-
         uint2 positionSS = input.texcoord * _ScreenSize.xy;
-        //float3 outColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz;
-        //outColor += LOAD_TEXTURE2D_X(_BloomTexture, positionSS).xyz * _Intensity;
-
-        //return float4(outColor, 1);
-        return float4(lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz, LOAD_TEXTURE2D_X(_BloomTexture, positionSS) / _BladeCount, _Intensity).xyz, 1);
+        return float4(lerp(LOAD_TEXTURE2D_X(_InputTexture, positionSS).xyz, LOAD_TEXTURE2D_X(_BloomTexture, positionSS), _Intensity).xyz, 1);
     }
 
     ENDHLSL
