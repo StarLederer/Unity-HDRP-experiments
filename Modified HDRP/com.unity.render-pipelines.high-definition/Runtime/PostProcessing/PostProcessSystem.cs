@@ -1902,8 +1902,9 @@ namespace UnityEngine.Rendering.HighDefinition
 			var bloomSize = mipSizes[0];
 			m_BloomTexture = m_BloomMipsUp[0];
 
-			float intensity = Mathf.Pow(2f, m_Bloom.intensity.value) - 1f; // Makes intensity easier to control
-			intensity += 0.02f * ((Mathf.Sin(Time.time * 6) + Mathf.Sin(Time.time * 12f) + Mathf.Sin(Time.time * 23f)) / 3f);
+			float minIntensity = Mathf.Pow(2f, m_Bloom.minIntensity.value) - 1f; // Makes intensity easier to control
+			float maxIntensity = Mathf.Pow(2f, m_Bloom.maxIntensity.value) - 1f; // Makes intensity easier to control
+			float intensity = Mathf.Lerp(minIntensity, maxIntensity, (Mathf.Sin(Time.time * 6) + Mathf.Sin(Time.time * 12f) + Mathf.Sin(Time.time * 23f)) / 3f); // Pupillary hippus
 			var tint = m_Bloom.tint.value.linear;
 			var luma = ColorUtils.Luminance(tint);
 			tint = luma > 0f ? tint * (1f / luma) : Color.white;

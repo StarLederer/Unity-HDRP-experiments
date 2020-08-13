@@ -34,10 +34,16 @@ namespace UnityEngine.Rendering.HighDefinition
         public MinFloatParameter threshold = new MinFloatParameter(0f, 0f);
 
         /// <summary>
-        /// Controls the strength of the bloom filter.
+        /// Controls the minimum strength of the bloom filter.
         /// </summary>
         [Tooltip("Controls the strength of the bloom filter.")]
-        public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);
+        public ClampedFloatParameter minIntensity = new ClampedFloatParameter(0f, 0f, 1f);
+
+        /// <summary>
+        /// Controls the maximum strength of the bloom filter.
+        /// </summary>
+        [Tooltip("Controls the strength of the bloom filter.")]
+        public ClampedFloatParameter maxIntensity = new ClampedFloatParameter(0f, 0f, 1f);
 
         /// <summary>
         /// Controls the strength of lenticular halo.
@@ -142,7 +148,7 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <returns><c>true</c> if the effect should be rendered, <c>false</c> otherwise.</returns>
         public bool IsActive()
         {
-            return intensity.value > 0f;
+            return minIntensity.value > 0f;
         }
     }
 
