@@ -228,6 +228,8 @@ namespace UnityEngine.Rendering.HighDefinition
             public ComputeShader bloomPrefilterCS;
             [Reload("Runtime/PostProcessing/Shaders/BloomBlur.compute")]
             public ComputeShader bloomBlurCS;
+            [Reload("Runtime/PostProcessing/Shaders/BloomHalo.compute")]
+            public ComputeShader bloomHalo;
             [Reload("Runtime/PostProcessing/Shaders/BloomUpsample.compute")]
             public ComputeShader bloomUpsampleCS;
             [Reload("Runtime/PostProcessing/Shaders/FXAA.compute")]

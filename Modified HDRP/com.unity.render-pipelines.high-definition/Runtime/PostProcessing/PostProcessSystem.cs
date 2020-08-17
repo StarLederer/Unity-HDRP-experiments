@@ -1862,47 +1862,49 @@ namespace UnityEngine.Rendering.HighDefinition
 				DispatchWithGuardBands(cs, kernel, highSize);
 			}
 
-			// Cleanup
 			for (int i = 0; i < mipCount; i++)
 			{
 				m_Pool.Recycle(m_BloomMipsDown[i]);
 				if (i > 0) m_Pool.Recycle(m_BloomMipsUp[i]);
 			}
 
-			// Lenticular haloes
-			var haloIntensity = m_Bloom.haloIntensity.value;
-			var haloEnabled = m_Bloom.haloIntensity.value > 0f ? 1f : 0f;
-			var haloRadius = m_Bloom.haloRadius.value / (float)m_Bloom.resolution;
-			var haloThickness = m_Bloom.haloThickness.value / (float)m_Bloom.resolution;
-			m_HaloTexture = m_Pool.Get(m_BloomMipsUp[0].scaleFactor, k_ColorFormat);
-
-			ComputeShader BloomCompute = Resources.Load<ComputeShader>("EyeLensScatteringCompute");
-			int clearKernel = BloomCompute.FindKernel("Clear");
-			int bloomKernel = BloomCompute.FindKernel("RainbowStripeBloomSingleWrite");
-
-			// Clear
-			cmd.SetComputeTextureParam(BloomCompute, clearKernel, HDShaderIDs._OutputTexture, m_HaloTexture);
-			DispatchWithGuardBands(BloomCompute, clearKernel, highSize);
-
-			// Lenticular haloes
-			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), haloRadius);
-			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), haloThickness);
-
-			cmd.SetComputeVectorParam(BloomCompute, HDShaderIDs._TexelSize, new Vector4(highSize.x, highSize.y, 1f / highSize.x, 1f / highSize.y));
-
-			cmd.SetComputeTextureParam(BloomCompute, bloomKernel, HDShaderIDs._InputTexture, m_BloomMipsUp[0]);
-			cmd.SetComputeTextureParam(BloomCompute, bloomKernel, HDShaderIDs._OutputTexture, m_HaloTexture);
-
-			for (float i = 0; i < haloThickness; i += 1f)
-			{
-				cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Iteration"), i);
-				DispatchWithGuardBands(BloomCompute, bloomKernel, highSize);
-			}
-
-			// Set uber data
 			var bloomSize = mipSizes[0];
 			m_BloomTexture = m_BloomMipsUp[0];
 
+			// Lenticular haloes
+			m_HaloTexture = m_Pool.Get(m_BloomMipsUp[0].scaleFactor, k_ColorFormat);
+			var haloIntensity = m_Bloom.haloIntensity.value;
+			var haloEnabled = m_Bloom.haloIntensity.value > 0f ? 1f : 0f;
+			if (haloEnabled > 0f)
+			{
+				var haloRadius = m_Bloom.haloRadius.value / (float)m_Bloom.resolution;
+				var haloThickness = m_Bloom.haloThickness.value / (float)m_Bloom.resolution;
+
+				ComputeShader BloomCompute = m_Resources.shaders.bloomHalo;
+				int clearKernel = BloomCompute.FindKernel("Clear");
+				int bloomKernel = BloomCompute.FindKernel("RainbowStripeBloomSingleWrite");
+
+				// Clear
+				cmd.SetComputeTextureParam(BloomCompute, clearKernel, HDShaderIDs._OutputTexture, m_HaloTexture);
+				DispatchWithGuardBands(BloomCompute, clearKernel, highSize);
+
+				// Lenticular haloes
+				cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), haloRadius);
+				cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), haloThickness);
+
+				cmd.SetComputeVectorParam(BloomCompute, HDShaderIDs._TexelSize, new Vector4(highSize.x, highSize.y, 1f / highSize.x, 1f / highSize.y));
+
+				cmd.SetComputeTextureParam(BloomCompute, bloomKernel, HDShaderIDs._InputTexture, m_BloomMipsUp[0]);
+				cmd.SetComputeTextureParam(BloomCompute, bloomKernel, HDShaderIDs._OutputTexture, m_HaloTexture);
+
+				for (float i = 0; i < haloThickness; i += 1f)
+				{
+					cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Iteration"), i);
+					DispatchWithGuardBands(BloomCompute, bloomKernel, highSize);
+				}
+			}
+
+			// Remaining uber data
 			float minIntensity = Mathf.Pow(2f, m_Bloom.minIntensity.value) - 1f; // Makes intensity easier to control
 			float maxIntensity = Mathf.Pow(2f, m_Bloom.maxIntensity.value) - 1f; // Makes intensity easier to control
 			float intensity = Mathf.Lerp(minIntensity, maxIntensity, (Mathf.Sin(Time.time * 6) + Mathf.Sin(Time.time * 12f) + Mathf.Sin(Time.time * 23f)) / 3f); // Pupillary hippus
