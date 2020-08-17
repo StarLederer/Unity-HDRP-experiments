@@ -737,6 +737,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public static readonly int _CoCTargetScale                 = Shader.PropertyToID("_CoCTargetScale");
 
         public static readonly int _BloomParams                    = Shader.PropertyToID("_BloomParams");
+        public static readonly int _BloomHaloParams                = Shader.PropertyToID("_BloomHaloParams");
         public static readonly int _BloomTint                      = Shader.PropertyToID("_BloomTint");
         public static readonly int _BloomTexture                   = Shader.PropertyToID("_BloomTexture");
         public static readonly int _BloomHaloTexture               = Shader.PropertyToID("_BloomHaloTexture");

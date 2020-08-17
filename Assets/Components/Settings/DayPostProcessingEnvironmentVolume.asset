@@ -120,14 +120,19 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0
     min: 0
-  intensity:
+  minIntensity:
     m_OverrideState: 1
-    m_Value: 0.4
+    m_Value: 0.3
+    min: 0
+    max: 1
+  maxIntensity:
+    m_OverrideState: 1
+    m_Value: 0.35
     min: 0
     max: 1
   haloIntensity:
     m_OverrideState: 1
-    m_Value: 0.1
+    m_Value: 0.143
     min: 0
     max: 1
   haloRadius:
@@ -234,7 +239,12 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0
     min: 0
-  intensity:
+  minIntensity:
+    m_OverrideState: 0
+    m_Value: 0
+    min: 0
+    max: 1
+  maxIntensity:
     m_OverrideState: 0
     m_Value: 0
     min: 0

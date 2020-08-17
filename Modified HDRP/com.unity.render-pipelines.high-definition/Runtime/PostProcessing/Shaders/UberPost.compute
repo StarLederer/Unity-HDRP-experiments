@@ -40,6 +40,7 @@ CBUFFER_START(cb0)
     float4 _DistortionParams2;
     float4 _LogLut3D_Params;        // x: 1 / lut_size, y: lut_size - 1, z: postexposure, w: enabled
     float4 _BloomParams;
+    float4 _BloomHaloParams;
     float4 _BloomThreshold;
     float4 _BloomTint;
     float4 _BloomDirtScaleOffset;
@@ -74,6 +75,8 @@ CBUFFER_END
 #define DirtIntensity           _BloomParams.y
 #define BloomEnabled            _BloomParams.z
 #define DirtEnabled             _BloomParams.w
+#define BloomHaloIntensity      _BloomHaloParams.x
+#define BloomHaloEnabled        _BloomHaloParams.y
 #define DirtScale               _BloomDirtScaleOffset.xy
 #define DirtOffset              _BloomDirtScaleOffset.zw
 
@@ -152,14 +155,23 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
     UNITY_BRANCH
     if (BloomEnabled)
     {
-        #if 0 // Bilinear
-        float3 bloom = SAMPLE_TEXTURE2D_X_LOD(_BloomTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uvDistorted), 0.0).xyz;
+		#if 0 // Bilinear
+        	float3 bloom = SAMPLE_TEXTURE2D_X_LOD(_BloomTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uvDistorted), 0.0).xyz;
         #else
-        float3 bloom = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_BloomTexture, sampler_LinearClamp), uvDistorted * _RTHandleScale.xy, _BloomBicubicParams, _RTHandleScale.xy, unity_StereoEyeIndex).xyz;
-        float3 halo = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_BloomHaloTexture, sampler_LinearClamp), uvDistorted * _RTHandleScale.xy, _BloomBicubicParams, _RTHandleScale.xy, unity_StereoEyeIndex).xyz;
+        	float3 bloom = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_BloomTexture, sampler_LinearClamp), uvDistorted * _RTHandleScale.xy, _BloomBicubicParams, _RTHandleScale.xy, unity_StereoEyeIndex).xyz;
         #endif
 
-        bloom = lerp(bloom, halo, DirtIntensity);
+    	UNITY_BRANCH
+    	if (BloomHaloEnabled)
+    	{
+			#if 0 // Bilinear
+	        	float3 halo = SAMPLE_TEXTURE2D_X_LOD(_BloomHaloTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uvDistorted), 0.0).xyz;
+	        #else
+	        	float3 halo = SampleTexture2DBicubic(TEXTURE2D_X_ARGS(_BloomHaloTexture, sampler_LinearClamp), uvDistorted * _RTHandleScale.xy, _BloomBicubicParams, _RTHandleScale.xy, unity_StereoEyeIndex).xyz;
+	        #endif
+
+	        bloom = lerp(bloom, halo, BloomHaloIntensity);
+    	}
 
         float3 thresholdedColor = QuadraticThreshold(color, _BloomThreshold.x, _BloomThreshold.yzw);
         color = lerp(color, (color - thresholdedColor) + (bloom * BloomTint), BloomIntensity);

@@ -115,7 +115,6 @@ MonoBehaviour:
   - {fileID: 6640133647794636954}
   - {fileID: 8711377374188185572}
   - {fileID: 4155987798732539183}
-  - {fileID: 4664997309735986215}
 --- !u!114 &4155987798732539183
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -137,14 +136,19 @@ MonoBehaviour:
     m_OverrideState: 0
     m_Value: 0
     min: 0
-  intensity:
+  minIntensity:
     m_OverrideState: 1
-    m_Value: 0.5
+    m_Value: 0.4
+    min: 0
+    max: 1
+  maxIntensity:
+    m_OverrideState: 1
+    m_Value: 0.45
     min: 0
     max: 1
   haloIntensity:
     m_OverrideState: 1
-    m_Value: 0.05
+    m_Value: 0.1
     min: 0
     max: 1
   haloRadius:
@@ -184,35 +188,6 @@ MonoBehaviour:
   m_HighQualityFiltering:
     m_OverrideState: 0
     m_Value: 1
---- !u!114 &4664997309735986215
-MonoBehaviour:
-  m_ObjectHideFlags: 3
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f1ac484824ceb2e499b7cce2f52932d9, type: 3}
-  m_Name: EyeLensScattering
-  m_EditorClassIdentifier: 
-  active: 1
-  m_AdvancedMode: 0
-  radius:
-    m_OverrideState: 1
-    m_Value: 160
-    min: 0
-    max: 512
-  thicnkess:
-    m_OverrideState: 1
-    m_Value: 30
-    min: 1
-    max: 300
-  intensity:
-    m_OverrideState: 1
-    m_Value: 0.05
-    min: 0
-    max: 1
 --- !u!114 &6640133647794636954
 MonoBehaviour:
   m_ObjectHideFlags: 3

@@ -1871,6 +1871,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 			// Lenticular haloes
 			var haloIntensity = m_Bloom.haloIntensity.value;
+			var haloEnabled = m_Bloom.haloIntensity.value > 0f ? 1f : 0f;
 			var haloRadius = m_Bloom.haloRadius.value / (float)m_Bloom.resolution;
 			var haloThickness = m_Bloom.haloThickness.value / (float)m_Bloom.resolution;
 			m_HaloTexture = m_Pool.Get(m_BloomMipsUp[0].scaleFactor, k_ColorFormat);
@@ -1883,7 +1884,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			cmd.SetComputeTextureParam(BloomCompute, clearKernel, HDShaderIDs._OutputTexture, m_HaloTexture);
 			DispatchWithGuardBands(BloomCompute, clearKernel, highSize);
 
-			// Haloes
+			// Lenticular haloes
 			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Radius"), haloRadius);
 			cmd.SetComputeFloatParam(BloomCompute, Shader.PropertyToID("_Thickness"), haloThickness);
 
@@ -1913,7 +1914,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			// Keep the aspect ratio correct & center the dirt texture, we don't want it to be
 			// stretched or squashed
 			var dirtTexture = m_Bloom.dirtTexture.value == null ? Texture2D.blackTexture : m_Bloom.dirtTexture.value;
-			int dirtEnabled = m_Bloom.dirtTexture.value != null && m_Bloom.dirtIntensity.value > 0f ? 1 : 0;
+			var dirtEnabled = m_Bloom.dirtTexture.value != null && m_Bloom.dirtIntensity.value > 0f ? 1f : 0f;
 			float dirtRatio = (float)dirtTexture.width / (float)dirtTexture.height;
 			float screenRatio = (float)camera.actualWidth / (float)camera.actualHeight;
 			var dirtTileOffset = new Vector4(1f, 1f, 0f, 0f);
@@ -1930,11 +1931,12 @@ namespace UnityEngine.Rendering.HighDefinition
 				dirtTileOffset.w = (1f - dirtTileOffset.y) * 0.5f;
 			}
 
+			// Send data to uber shader
 			cmd.SetComputeTextureParam(uberCS, uberKernel, HDShaderIDs._BloomTexture, m_BloomTexture);
 			cmd.SetComputeTextureParam(uberCS, uberKernel, HDShaderIDs._BloomHaloTexture, m_HaloTexture);
 			cmd.SetComputeTextureParam(uberCS, uberKernel, HDShaderIDs._BloomDirtTexture, dirtTexture);
-			//cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomParams, new Vector4(intensity, dirtIntensity, 1f, dirtEnabled));
-			cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomParams, new Vector4(intensity, haloIntensity, 1f, 0f));
+			cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomParams, new Vector4(intensity, dirtIntensity, 1f, dirtEnabled));
+			cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomHaloParams, new Vector4(haloIntensity, haloEnabled, 0f, 0f));
 			cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomTint, (Vector4)tint);
 			cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomBicubicParams, new Vector4(bloomSize.x, bloomSize.y, 1f / bloomSize.x, 1f / bloomSize.y));
 			cmd.SetComputeVectorParam(uberCS, HDShaderIDs._BloomDirtScaleOffset, dirtTileOffset);
