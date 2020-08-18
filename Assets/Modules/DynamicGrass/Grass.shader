@@ -402,14 +402,13 @@ Shader "Grass"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassGBuffer.hlsl"
 
             // Custom: Geometry and fragment shader implementation
-            #include "Assets/CustomShader/Common/CustomVertex.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitGeometry.hlsl"
             #include "GrassGeometry.hlsl"
-            #include "GrassFragment.hlsl"
 
             // Custom: Shader entry points
-            #pragma vertex VertexThru
-            #pragma geometry FlattenerGeometry
-            #pragma fragment FlattenerFragment
+            #pragma vertex SkipVert
+            #pragma geometry GrassGeometry
+            #pragma fragment Frag
 
             ENDHLSL
         }
@@ -445,12 +444,12 @@ Shader "Grass"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl"
 
             // Custom: Geometry shader implementation
-            #include "Assets/CustomShader/Common/CustomVertex.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitGeometry.hlsl"
             #include "GrassGeometry.hlsl"
 
             // Custom: Shader entry points
-            #pragma vertex VertexThru
-            #pragma geometry FlattenerGeometry
+            #pragma vertex SkipVert
+            #pragma geometry GrassGeometry
             #pragma fragment Frag
 
             ENDHLSL
@@ -501,12 +500,12 @@ Shader "Grass"
             #include "Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipeline/ShaderPass/ShaderPassDepthOnly.hlsl"
 
             // Custom: Geometry shader implementation
-            #include "Assets/CustomShader/Common/CustomVertex.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitGeometry.hlsl"
             #include "GrassGeometry.hlsl"
 
             // Custom: Shader entry points
-            #pragma vertex VertexThru
-            #pragma geometry FlattenerGeometry
+            #pragma vertex SkipVert
+            #pragma geometry GrassGeometry
             #pragma fragment Frag
 
             ENDHLSL
@@ -558,12 +557,12 @@ Shader "Grass"
             #undef unity_MotionVectorsParams
 
             // Custom: Geometry shader implementation
-            #include "Assets/CustomShader/Common/CustomVertex.hlsl"
+            #include "Packages/com.unity.render-pipelines.high-definition/Runtime/Material/Lit/LitGeometry.hlsl"
             #include "GrassGeometry.hlsl"
 
             // Custom: Shader entry points
-            #pragma vertex VertexThru
-            #pragma geometry FlattenerGeometry
+            #pragma vertex SkipVert
+            #pragma geometry GrassGeometry
             #pragma fragment Frag
 
             ENDHLSL
