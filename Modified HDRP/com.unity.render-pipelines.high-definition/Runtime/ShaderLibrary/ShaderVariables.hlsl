@@ -437,7 +437,7 @@ float2 ClampAndScaleUVForPoint(float2 UV)
 
 // Define Model Matrix Macro
 // Note: In order to be able to define our macro to forbid usage of unity_ObjectToWorld/unity_WorldToObject
-// We need to declare inline function. Using uniform directly mean they are expand with the macro
+// we need to declare inline function. Using uniform directly mean they are expand with the macro
 float4x4 GetRawUnityObjectToWorld() { return unity_ObjectToWorld; }
 float4x4 GetRawUnityWorldToObject() { return unity_WorldToObject; }
 

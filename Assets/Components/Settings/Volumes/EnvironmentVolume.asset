@@ -260,7 +260,7 @@ MonoBehaviour:
     min: 0
   baseHeight:
     m_OverrideState: 1
-    m_Value: 100
+    m_Value: 10
   maximumHeight:
     m_OverrideState: 1
     m_Value: 700
@@ -272,7 +272,7 @@ MonoBehaviour:
     showEyeDropper: 1
   meanFreePath:
     m_OverrideState: 1
-    m_Value: 250
+    m_Value: 1000
     min: 1
   enableVolumetricFog:
     m_OverrideState: 1
@@ -283,7 +283,7 @@ MonoBehaviour:
     min: -1
     max: 1
   globalLightProbeDimmer:
-    m_OverrideState: 0
+    m_OverrideState: 1
     m_Value: 1
     min: 0
     max: 1
