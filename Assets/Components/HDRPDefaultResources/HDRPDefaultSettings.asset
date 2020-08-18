@@ -232,17 +232,17 @@ MonoBehaviour:
     min: 0
   minIntensity:
     m_OverrideState: 1
-    m_Value: 0.3
+    m_Value: 0
     min: 0
     max: 1
   maxIntensity:
     m_OverrideState: 1
-    m_Value: 0.35
+    m_Value: 0
     min: 0
     max: 1
   haloIntensity:
     m_OverrideState: 1
-    m_Value: 0.1
+    m_Value: 0
     min: 0
     max: 1
   haloRadius:

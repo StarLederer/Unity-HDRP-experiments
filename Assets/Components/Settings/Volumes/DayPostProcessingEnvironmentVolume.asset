@@ -132,7 +132,7 @@ MonoBehaviour:
     max: 1
   haloIntensity:
     m_OverrideState: 1
-    m_Value: 0.1
+    m_Value: 0.162
     min: 0
     max: 1
   haloRadius:

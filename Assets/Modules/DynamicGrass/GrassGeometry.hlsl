@@ -11,7 +11,7 @@ PackedVaryingsType VertexOutput(
 }
 
 // Geometry shader function body
-[maxvertexcount(3)]
+[maxvertexcount(6)]
 void GrassGeometry(
     uint pid : SV_PrimitiveID,
     point Attributes input[1],
@@ -21,17 +21,22 @@ void GrassGeometry(
     // Input vertices
     AttributesMesh v0 = ConvertToAttributesMesh(input[0]);
 
-    float grassSize = 0.2;
+    float grassSize = 0.12;
 
-    float3 p0_c = v0.positionOS;
-    float3 p0_c1 = v0.positionOS + float3(0, grassSize, grassSize/2);
-    float3 p0_c2 = v0.positionOS + float3(0, 0, grassSize);
+    float3 p0_c0 = v0.positionOS - float3(grassSize/2, 0, 0);
+    float3 p0_c1 = v0.positionOS + float3(0, grassSize, 0);
+    float3 p0_c2 = v0.positionOS + float3(grassSize/2, 0, 0);
+
+    float3 p0_c00 = v0.positionOS - float3(0, 0, grassSize/2);
+    float3 p0_c11 = v0.positionOS + float3(0, grassSize, 0);
+    float3 p0_c22 = v0.positionOS + float3(0, 0, grassSize/2);
+
 
     #if SHADERPASS == SHADERPASS_MOTION_VECTORS
         bool hasDeformation = unity_MotionVectorsParams.x > 0.0;
-        float3 p0_p = hasDeformation ? input[0].previousPositionOS : p0_c;
+        float3 p0_p = hasDeformation ? input[0].previousPositionOS : v0.positionOS;
     #else
-        float3 p0_p = p0_c;
+        float3 p0_p = v0.positionOS;
     #endif
 
     #ifdef ATTRIBUTES_NEED_NORMAL
@@ -40,9 +45,13 @@ void GrassGeometry(
         float3 n0 = 0;
     #endif
 
-    outStream.Append(VertexOutput(v0, p0_c, p0_p, n0));
+    outStream.Append(VertexOutput(v0, p0_c0, p0_p, n0));
     outStream.Append(VertexOutput(v0, p0_c1, p0_p, n0));
     outStream.Append(VertexOutput(v0, p0_c2, p0_p, n0));
     outStream.RestartStrip();
-    return;
+
+    outStream.Append(VertexOutput(v0, p0_c00, p0_p, n0));
+    outStream.Append(VertexOutput(v0, p0_c11, p0_p, n0));
+    outStream.Append(VertexOutput(v0, p0_c22, p0_p, n0));
+    outStream.RestartStrip();
 }
