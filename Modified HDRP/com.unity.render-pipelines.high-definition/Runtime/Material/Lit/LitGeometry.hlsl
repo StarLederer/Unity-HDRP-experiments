@@ -74,27 +74,30 @@ void SkipVert(inout Attributes input) {}
 // Re-pack the vertex data and apply the original vertex function.
 PackedVaryingsType PackVertexData(
     AttributesMesh source,
-    float3 position, float3 position_prev, float3 normal, float4 color
+    float3 position, float3 position_prev, float3 normal, float2 uv0, float4 color
 )
 {
     source.positionOS = position;
-#if defined(VARYINGS_NEED_TEXCOORD1) || defined(VARYINGS_DS_NEED_TEXCOORD1)
-    // FIXME: I'm not sure why but the shader compiler emits an "unexpected
-    // LEFT_BRACKET" error on Vulkan. Strangely, it disappears by touching UV1
-    // before calling VertMesh.
-    source.uv1 = source.uv1 + 1e-12;
-#endif
-#ifdef ATTRIBUTES_NEED_NORMAL
-    source.normalOS = normal;
-#endif
-#ifdef ATTRIBUTES_NEED_COLOR
-    source.color = color;
-#endif
-#if SHADERPASS == SHADERPASS_MOTION_VECTORS
-    AttributesPass attrib;
-    attrib.previousPositionOS = position_prev;
-    return Vert(source, attrib);
-#else
-    return Vert(source);
-#endif
+    #if defined(VARYINGS_NEED_TEXCOORD1) || defined(VARYINGS_DS_NEED_TEXCOORD1)
+        // FIXME: I'm not sure why but the shader compiler emits an "unexpected
+        // LEFT_BRACKET" error on Vulkan. Strangely, it disappears by touching UV1
+        // before calling VertMesh.
+        source.uv1 = source.uv1 + 1e-12;
+    #endif
+    #ifdef ATTRIBUTES_NEED_NORMAL
+        source.normalOS = normal;
+    #endif
+    #ifdef ATTRIBUTES_NEED_TEXCOORD0
+        source.uv0 = uv0;
+    #endif
+    #ifdef ATTRIBUTES_NEED_COLOR
+        source.color = color;
+    #endif
+    #if SHADERPASS == SHADERPASS_MOTION_VECTORS
+        AttributesPass attrib;
+        attrib.previousPositionOS = position_prev;
+        return Vert(source, attrib);
+    #else
+        return Vert(source);
+    #endif
 }
