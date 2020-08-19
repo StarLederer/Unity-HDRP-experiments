@@ -1,0 +1,15 @@
+{
+    "name": "com.hermanlederer.dynamic-grass.editor",
+    "references": [
+        "GUID:765666205aa57e944b4656b9fcaf05a5"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
