@@ -551,8 +551,10 @@ namespace UnityEngine.Rendering.HighDefinition
 						else
 						{
 							cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._BloomTexture, TextureXR.GetBlackTexture());
+							cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._BloomHaloTexture, TextureXR.GetBlackTexture());
 							cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._BloomDirtTexture, Texture2D.blackTexture);
 							cmd.SetComputeVectorParam(cs, HDShaderIDs._BloomParams, Vector4.zero);
+							cmd.SetComputeVectorParam(cs, HDShaderIDs._BloomHaloParams, Vector4.zero);
 						}
 
 						// Build the color grading lut
