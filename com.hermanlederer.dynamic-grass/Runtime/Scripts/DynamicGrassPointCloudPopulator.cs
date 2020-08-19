@@ -6,17 +6,8 @@ namespace DynamicGrass
 {
 	static class ShaderIDs
 	{
-		public static readonly int BaseParams = Shader.PropertyToID("_BaseParams");
-		public static readonly int AnimParams = Shader.PropertyToID("_AnimParams");
-		public static readonly int TimeParams = Shader.PropertyToID("_TimeParams");
-		public static readonly int EffOrigin = Shader.PropertyToID("_EffOrigin");
+		public static readonly int GrassSize = Shader.PropertyToID("_GrassSize");
 		public static readonly int EffSpace = Shader.PropertyToID("_EffSpace");
-		public static readonly int EffPlaneC = Shader.PropertyToID("_EffPlaneC");
-		public static readonly int EffPlaneP = Shader.PropertyToID("_EffPlaneP");
-		public static readonly int EffHSVM = Shader.PropertyToID("_EffHSVM");
-		public static readonly int EdgeHSVM = Shader.PropertyToID("_EdgeHSVM");
-		public static readonly int EdgeWidth = Shader.PropertyToID("_EdgeWidth");
-		public static readonly int HueShift = Shader.PropertyToID("_HueShift");
 	}
 
 	[ExecuteAlways]
@@ -32,6 +23,7 @@ namespace DynamicGrass
 		//
 		// Editor varaibles
 		[Header("Grass")]
+		[SerializeField] private float grassSize = 0.5f;
 		[SerializeField] [Range(0, 65536)] private int grassAmount = 0;
 		[SerializeField] [Range(0, 180)] private float slopeThreshold = 45;
 		[Header("Region")]
@@ -73,6 +65,7 @@ namespace DynamicGrass
 
 			meshRenderer.GetPropertyBlock(_sheet);
 			_sheet.SetMatrix(ShaderIDs.EffSpace, espace_obj);
+			_sheet.SetFloat(ShaderIDs.GrassSize, grassSize);
 			meshRenderer.SetPropertyBlock(_sheet);
 		}
 
