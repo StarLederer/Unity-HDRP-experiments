@@ -9,7 +9,7 @@ namespace UnityEngine.Rendering.HighDefinition
 	using AntialiasingMode = HDAdditionalCameraData.AntialiasingMode;
 
 	// Main class for all post-processing related features - only includes camera effects, no
-	// lighting/surface effect like SSR/AO
+	// lighting/surface effects like SSR/AO
 	sealed class PostProcessSystem
 	{
 		private enum SMAAStage

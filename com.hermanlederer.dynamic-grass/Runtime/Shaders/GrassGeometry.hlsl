@@ -1,25 +1,48 @@
-// Vertex output from geometry
-PackedVaryingsType VertexOutput(
-    AttributesMesh source,
-    float3 position, float3 prev_position, half3 normal, float2 uv0 = 0,
-    half emission = 0, half random = 0, half3 bary_coord = 0.5
-)
-{
-    // We omit the z component of bary_coord.
-    half4 color = half4(bary_coord.xy, emission, random);
-    return PackVertexData(source, position, prev_position, normal, uv0, color);
-}
-
-//
-//
-// Defines
-//#define USE_CORRECT_GRASS_NORMALS // grass looks better with normals just facing up
+#include "SimplexNoise2D.hlsl"
 
 //
 //
 // Parameters
 float _GrassSize;
-float3 _LodCenter; // x y z are user, w discarded
+float3 _LodCenter; // x y z lod center, w discarded
+float4 _WindParams; // x xz strength, y y strength, z speed, w scale
+
+//
+//
+// Defines
+//#define USE_CORRECT_GRASS_NORMALS // Grass looks better with normals just facing up. If you enable this don't forget to change normal mode in material settings
+
+#define WindStrengthXZ  _WindParams.x
+#define WindStrengthY   _WindParams.y
+#define WindSpeed       _WindParams.z
+#define WindScale       _WindParams.w
+
+//
+//
+// Noise helper function
+float GetNosie(float2 uv)
+{
+    return snoise(uv);
+}
+
+//
+//
+// Vertex output from geometry
+PackedVaryingsType VertexOutput(
+    AttributesMesh source,
+    float3 position, float3 prev_position, half3 normal, float2 uv0 = 0, float2 uv1 = 0,
+    half emission = 0, half random = 0, half3 bary_coord = 0.5
+    )
+{
+    // We omit the z component of bary_coord
+    half4 color = half4(bary_coord.xy, emission, random);
+
+    // Wind animation
+    float3 positionWithWind = position;
+    positionWithWind += float3(uv1.x, uv1.y, uv1.x) * float3(WindStrengthXZ, WindStrengthY, WindStrengthXZ) * GetNosie(position * WindScale + _TimeParameters.xx * WindSpeed);
+
+    return PackVertexData(source, positionWithWind, prev_position, normal, uv0, color);
+}
 
 //
 //
@@ -50,14 +73,14 @@ void Lod0Geometry(
         faceNormal = cross(normal, grassDirection);
     #endif
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
     outStream.RestartStrip();
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
     outStream.RestartStrip();
 
     // Plane 2
@@ -72,14 +95,14 @@ void Lod0Geometry(
         faceNormal = cross(normal, grassDirection);
     #endif
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
     outStream.RestartStrip();
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
     outStream.RestartStrip();
 
     // Plane 3
@@ -94,14 +117,14 @@ void Lod0Geometry(
         faceNormal = cross(normal, grassDirection);
     #endif
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
     outStream.RestartStrip();
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
     outStream.RestartStrip();
 }
 
@@ -134,14 +157,14 @@ void Lod1Geometry(
         faceNormal = cross(normal, grassDirection);
     #endif
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
     outStream.RestartStrip();
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
     outStream.RestartStrip();
 
     // Z plane
@@ -156,14 +179,14 @@ void Lod1Geometry(
         faceNormal = cross(normal, grassDirection);
     #endif
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
     outStream.RestartStrip();
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
     outStream.RestartStrip();
 }
 
@@ -193,14 +216,14 @@ void Lod2Geometry(
         faceNormal = cross(normal, grassDirection);
     #endif
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
     outStream.RestartStrip();
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
     outStream.RestartStrip();
 }
 
@@ -214,7 +237,7 @@ void GrassGeometry(
     inout TriangleStream<PackedVaryingsType> outStream
     )
 {
-    // Input vertex
+    // Input data
     AttributesMesh inputVertex = ConvertToAttributesMesh(input[0]);
 
     #if SHADERPASS == SHADERPASS_MOTION_VECTORS
@@ -230,7 +253,7 @@ void GrassGeometry(
         float3 normal = float(0, 1, 0);
     #endif
 
-    // Position calculations
+    // Grass scale calculation with distance fading
     float3 currentVPos = inputVertex.positionOS;
     float posDiffX = currentVPos.x - _LodCenter.x;
     float posDiffY = currentVPos.y - _LodCenter.y;
@@ -241,7 +264,8 @@ void GrassGeometry(
     scale = scale * scale;
     scale = _GrassSize * scale;
 
-    //float3 currentVPosUp = currentVPos + normal;                                  // normal
+    // Grass growth direction
+    //float3 currentVPosUp = currentVPos + normal;                                  // surface normal normal
     float3 currentVPosUp = currentVPos + (normal + float3(0, scale, 0)) / 2;        // average
     //float3 currentVPosUp = currentVPos + float3(0, scale, 0);                     // up
 

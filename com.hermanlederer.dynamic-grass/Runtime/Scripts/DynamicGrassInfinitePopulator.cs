@@ -21,13 +21,18 @@ namespace DynamicGrass
 		[SerializeField] private float grassSize = 0.5f;
 		[SerializeField] [Range(0, 65536)] private int grassAmount = 0;
 		[SerializeField] [Range(0, 180)] private float slopeThreshold = 45;
+		[Header("Wind")]
+		[SerializeField] private Vector2 windStrength = Vector2.zero;
+		[SerializeField] private float windSpeed = 0f;
+		[SerializeField] private float windScale = 1f;
 		[Header("Region")]
 		[SerializeField] private Vector3 boxSize = Vector3.zero;
 
 		//
 		// Private variables
 		private Mesh mesh;
-		MaterialPropertyBlock _sheet;
+		private MaterialPropertyBlock _sheet;
+		private WindZone windZone;
 
 		//
 		// Public variables
@@ -56,10 +61,11 @@ namespace DynamicGrass
 			var espace_obj = Matrix4x4.identity * meshRenderer.transform.localToWorldMatrix;
 
 			Vector4 lodCenterVec4 = new Vector4(lodCenter.x, lodCenter.y, lodCenter.z, 0f);
-
 			meshRenderer.GetPropertyBlock(_sheet);
 			_sheet.SetMatrix(ShaderIDs.EffSpace, espace_obj);
 			_sheet.SetFloat(ShaderIDs.GrassSize, grassSize);
+			_sheet.SetVector(Shader.PropertyToID("_TimeParameters"), new Vector4(Time.time, 0, 0, 0));
+			_sheet.SetVector(Shader.PropertyToID("_WindParams"), new Vector4(windStrength.x, windStrength.y, windSpeed, windScale));
 			_sheet.SetVector(ShaderIDs.LodCenter, lodCenterVec4);
 			meshRenderer.SetPropertyBlock(_sheet);
 		}
