@@ -306,6 +306,7 @@ Shader "Grass"
     //-------------------------------------------------------------------------------------
     // Define
     //-------------------------------------------------------------------------------------
+    #define ATTRIBUTES_NEED_NORMAL
 
     // This shader support vertex modification
     #define HAVE_VERTEX_MODIFICATION

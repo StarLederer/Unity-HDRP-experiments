@@ -36,11 +36,11 @@ void Lod0Geometry(
 {
     float3 grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR; // B ottom L eft R ight T op
     float3 faceNormal = normal;
-
     float3 grassDirection;
 
     // Plane 1
     grassDirection = float3(1, 0, 0);
+    grassDirection = cross(grassDirection, normal);
 
     grassVPosBL = currentVPos - grassDirection * scale;
     grassVPosTL = currentVPosUp - grassDirection * scale;
@@ -62,6 +62,7 @@ void Lod0Geometry(
 
     // Plane 2
     grassDirection = float3(0.7071067811865475, 0, 0.7071067811865475);
+    grassDirection = cross(grassDirection, normal);
 
     grassVPosBL = currentVPos - grassDirection * scale;
     grassVPosTL = currentVPosUp - grassDirection * scale;
@@ -83,6 +84,7 @@ void Lod0Geometry(
 
     // Plane 3
     grassDirection = float3(-0.7071067811865475, 0, 0.7071067811865475);
+    grassDirection = cross(grassDirection, normal);
 
     grassVPosBL = currentVPos - grassDirection * scale;
     grassVPosTL = currentVPosUp - grassDirection * scale;
@@ -118,14 +120,18 @@ void Lod1Geometry(
 {
     float3 grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR; // B ottom L eft R ight T op
     float3 faceNormal = normal;
+    float3 grassDirection;
 
     // X plane
-    grassVPosBL = currentVPos - float3(scale, 0, 0);
-    grassVPosTL = currentVPosUp - float3(scale, 0, 0);
-    grassVPosTR = currentVPosUp + float3(scale, 0, 0);
-    grassVPosBR = currentVPos + float3(scale, 0, 0);
+    grassDirection = float3(1, 0, 0);
+    grassDirection = cross(grassDirection, normal);
+
+    grassVPosBL = currentVPos - grassDirection * scale;
+    grassVPosTL = currentVPosUp - grassDirection * scale;
+    grassVPosTR = currentVPosUp + grassDirection * scale;
+    grassVPosBR = currentVPos + grassDirection * scale;
     #ifdef USE_CORRECT_GRASS_NORMALS
-        faceNormal = cross(normal, float3(1, 0, 0));
+        faceNormal = cross(normal, grassDirection);
     #endif
 
     outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
@@ -139,12 +145,15 @@ void Lod1Geometry(
     outStream.RestartStrip();
 
     // Z plane
-    grassVPosBL = currentVPos - float3(0, 0, scale);
-    grassVPosTL = currentVPosUp - float3(0, 0, scale);
-    grassVPosTR = currentVPosUp + float3(0, 0, scale);
-    grassVPosBR = currentVPos + float3(0, 0, scale);
+    grassDirection = float3(0, 0, 1);
+    grassDirection = cross(grassDirection, normal);
+
+    grassVPosBL = currentVPos - grassDirection * scale;
+    grassVPosTL = currentVPosUp - grassDirection * scale;
+    grassVPosTR = currentVPosUp + grassDirection * scale;
+    grassVPosBR = currentVPos + grassDirection * scale;
     #ifdef USE_CORRECT_GRASS_NORMALS
-        faceNormal = cross(normal, float3(0, 0, 1));
+        faceNormal = cross(normal, grassDirection);
     #endif
 
     outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
@@ -232,7 +241,9 @@ void GrassGeometry(
     scale = scale * scale;
     scale = _GrassSize * scale;
 
-    float3 currentVPosUp = currentVPos + normal * scale;
+    //float3 currentVPosUp = currentVPos + normal;                                  // normal
+    float3 currentVPosUp = currentVPos + (normal + float3(0, scale, 0)) / 2;        // average
+    //float3 currentVPosUp = currentVPos + float3(0, scale, 0);                     // up
 
     UNITY_BRANCH
     if (distance < 8) Lod0Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
