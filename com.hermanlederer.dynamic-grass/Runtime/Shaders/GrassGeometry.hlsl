@@ -1,4 +1,4 @@
-#include "SimplexNoise2D.hlsl"
+//#include "SimplexNoise2D.hlsl"
 
 //
 //
@@ -19,10 +19,19 @@ float4 _WindParams; // x xz strength, y y strength, z speed, w scale
 
 //
 //
-// Noise helper function
-float GetNosie(float2 uv)
+// Random
+float random(float2 uv)
 {
-    return snoise(uv);
+    return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453123);
+}
+
+//
+//
+// Wind helper function
+float GetWind(float2 uv)
+{
+    //return snoise(uv); // live simplex noise
+    return sin(uv + _TimeParameters.x);
 }
 
 //
@@ -39,7 +48,9 @@ PackedVaryingsType VertexOutput(
 
     // Wind animation
     float3 positionWithWind = position;
-    positionWithWind += float3(uv1.x, uv1.y, uv1.x) * float3(WindStrengthXZ, WindStrengthY, WindStrengthXZ) * GetNosie(position * WindScale + _TimeParameters.xx * WindSpeed);
+    positionWithWind += float3(uv1.x, uv1.y, uv1.x) * float3(WindStrengthXZ, WindStrengthY, WindStrengthXZ) * GetWind(position * WindScale + _TimeParameters.xx * WindSpeed);
+    //positionWithWind = position;
+    //positionWithWind.y = float3(0, GetNosie(position), 0);
 
     return PackVertexData(source, positionWithWind, prev_position, normal, uv0, color);
 }

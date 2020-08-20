@@ -1,6 +1,6 @@
-﻿using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace DynamicGrass
 {
@@ -32,7 +32,6 @@ namespace DynamicGrass
 		// Private variables
 		private Mesh mesh;
 		private MaterialPropertyBlock _sheet;
-		private WindZone windZone;
 
 		//
 		// Public variables
@@ -64,7 +63,7 @@ namespace DynamicGrass
 			meshRenderer.GetPropertyBlock(_sheet);
 			_sheet.SetMatrix(ShaderIDs.EffSpace, espace_obj);
 			_sheet.SetFloat(ShaderIDs.GrassSize, grassSize);
-			_sheet.SetVector(Shader.PropertyToID("_TimeParameters"), new Vector4(Time.time, 0, 0, 0));
+			_sheet.SetVector(Shader.PropertyToID("_TimeParameters"), new Vector4(Time.time, Mathf.Sin(Time.time), 0, 0));
 			_sheet.SetVector(Shader.PropertyToID("_WindParams"), new Vector4(windStrength.x, windStrength.y, windSpeed, windScale));
 			_sheet.SetVector(ShaderIDs.LodCenter, lodCenterVec4);
 			meshRenderer.SetPropertyBlock(_sheet);
