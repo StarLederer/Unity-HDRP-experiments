@@ -4,13 +4,18 @@
 //
 // Parameters
 float _GrassSize;
-float3 _LodCenter; // x y z lod center, w discarded
+float4 _LodCenter; // x y z lod center, w discarded
+float4 _LodCascades; // x lod0, y lod1, z lod2, w discarded
 float4 _WindParams; // x xz strength, y y strength, z speed, w scale
 
 //
 //
 // Defines
 //#define USE_CORRECT_GRASS_NORMALS // Grass looks better with normals just facing up. If you enable this don't forget to change normal mode in material settings
+
+#define Lod0Radius       _LodCascades.x
+#define Lod1Radius       _LodCascades.y
+#define Lod2Radius       _LodCascades.z
 
 #define WindStrengthXZ  _WindParams.x
 #define WindStrengthY   _WindParams.y
@@ -271,17 +276,19 @@ void GrassGeometry(
     float posDiffZ = currentVPos.z - _LodCenter.z;
     float distance = sqrt(posDiffX*posDiffX + posDiffY*posDiffY + posDiffZ*posDiffZ);
 
-    float scale = 1 - max(8, distance) / 32;
+    float scale = 1;// - max(8, distance) / Lod2Radius;
     scale = scale * scale;
     scale = _GrassSize * scale;
+    scale += random(currentVPos) * 0.2;
 
     // Grass growth direction
-    //float3 currentVPosUp = currentVPos + normal;                                  // surface normal normal
+    //float3 currentVPosUp = currentVPos + normal;                                  // surface normal
     float3 currentVPosUp = currentVPos + (normal + float3(0, scale, 0)) / 2;        // average
     //float3 currentVPosUp = currentVPos + float3(0, scale, 0);                     // up
 
+    // Generating geometry using LODs
     UNITY_BRANCH
-    if (distance < 8) Lod0Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
-    else if (distance < 16) Lod1Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
-    else if (distance < 32) Lod2Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
+    if (distance < Lod0Radius) Lod0Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
+    else if (distance < Lod1Radius) Lod1Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
+    else if (distance < Lod2Radius) Lod2Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
 }
