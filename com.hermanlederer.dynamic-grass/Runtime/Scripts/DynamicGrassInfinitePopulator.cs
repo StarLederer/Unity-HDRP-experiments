@@ -4,17 +4,10 @@ using UnityEngine;
 
 namespace DynamicGrass
 {
-	static class ShaderIDs
-	{
-		public static readonly int EffSpace = Shader.PropertyToID("_EffSpace");
-		public static readonly int GrassSize = Shader.PropertyToID("_GrassSize");
-		public static readonly int LodCenter = Shader.PropertyToID("_LodCenter");
-	}
-
 	[ExecuteAlways]
 	[RequireComponent(typeof(MeshFilter))]
 	[RequireComponent(typeof(MeshRenderer))]
-	public class DynamicGrassPointCloudPopulator : MonoBehaviour
+	public class DynamicGrassInfinitePopulator : MonoBehaviour
 	{
 		//
 		// Other components
@@ -24,6 +17,7 @@ namespace DynamicGrass
 		//
 		// Editor varaibles
 		[Header("Grass")]
+		[SerializeField] private bool useLODs = true;
 		[SerializeField] private float grassSize = 0.5f;
 		[SerializeField] [Range(0, 65536)] private int grassAmount = 0;
 		[SerializeField] [Range(0, 180)] private float slopeThreshold = 45;
@@ -37,7 +31,7 @@ namespace DynamicGrass
 
 		//
 		// Public variables
-
+		private Vector3 lodCenter = Vector3.zero;
 
 		//--------------------------
 		// MonoBehaviour methods
@@ -46,28 +40,43 @@ namespace DynamicGrass
 		{
 			meshFilter = GetComponent<MeshFilter>();
 			meshRenderer = GetComponent<MeshRenderer>();
+
 			Populate();
 		}
 
-		private void OnDrawGizmosSelected()
+		private void Update()
 		{
-			Gizmos.color = Color.green;
-			Gizmos.DrawWireCube(transform.position, boxSize);
+			lodCenter = Camera.main.transform.position - transform.position;
 		}
 
 		void LateUpdate()
 		{
 			if (_sheet == null) _sheet = new MaterialPropertyBlock();
 
-			//var espace = _origin != null ? _origin.worldToLocalMatrix : Matrix4x4.identity;
-			var espace = Matrix4x4.identity;
+			var espace_obj = Matrix4x4.identity * meshRenderer.transform.localToWorldMatrix;
 
-			var espace_obj = espace * meshRenderer.transform.localToWorldMatrix;
+			Vector4 lodCenterVec4 = new Vector4(lodCenter.x, lodCenter.y, lodCenter.z, 0f);
 
 			meshRenderer.GetPropertyBlock(_sheet);
 			_sheet.SetMatrix(ShaderIDs.EffSpace, espace_obj);
 			_sheet.SetFloat(ShaderIDs.GrassSize, grassSize);
+			_sheet.SetVector(ShaderIDs.LodCenter, lodCenterVec4);
 			meshRenderer.SetPropertyBlock(_sheet);
+		}
+
+		private void OnDrawGizmos()
+		{
+			// LOD 0
+			Gizmos.color = Color.green;
+			Gizmos.DrawWireSphere(lodCenter, boxSize.x);
+
+			// LOD 1
+			Gizmos.color = Color.yellow;
+			Gizmos.DrawWireSphere(lodCenter, boxSize.x * 2);
+
+			// LOD 2
+			Gizmos.color = Color.red;
+			Gizmos.DrawWireSphere(lodCenter, boxSize.x * 4);
 		}
 
 		//--------------------------
