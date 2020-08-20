@@ -275,11 +275,12 @@ void GrassGeometry(
     float posDiffY = currentVPos.y - _LodCenter.y;
     float posDiffZ = currentVPos.z - _LodCenter.z;
     float distance = sqrt(posDiffX*posDiffX + posDiffY*posDiffY + posDiffZ*posDiffZ);
+    distance += random(currentVPos) * 8 - 4;
 
-    float scale = 1;// - max(8, distance) / Lod2Radius;
-    scale = scale * scale;
-    scale = _GrassSize * scale;
-    scale += random(currentVPos) * 0.2;
+    float scale = (_GrassSize + random(currentVPos) * 0.2);
+
+    float distanceFade = distance / Lod2Radius;
+    currentVPos -= normal * scale * pow(distanceFade, 2);
 
     // Grass growth direction
     //float3 currentVPosUp = currentVPos + normal;                                  // surface normal
