@@ -45,17 +45,15 @@ float GetWind(float2 uv)
 PackedVaryingsType VertexOutput(
     AttributesMesh source,
     float3 position, float3 prev_position, half3 normal, float2 uv0 = 0, float2 uv1 = 0,
-    half emission = 0, half random = 0, half3 bary_coord = 0.5
+    half emission = 0, half rnd = 0, half3 bary_coord = 0.5
     )
 {
     // We omit the z component of bary_coord
-    half4 color = half4(bary_coord.xy, emission, random);
+    half4 color = half4(bary_coord.xy, emission, rnd);
 
     // Wind animation
     float3 positionWithWind = position;
     positionWithWind += float3(uv1.x, uv1.y, uv1.x) * float3(WindStrengthXZ, WindStrengthY, WindStrengthXZ) * GetWind(position * WindScale + _TimeParameters.xx * WindSpeed);
-    //positionWithWind = position;
-    //positionWithWind.y = float3(0, GetNosie(position), 0);
 
     return PackVertexData(source, positionWithWind, prev_position, normal, uv0, color);
 }
@@ -80,6 +78,8 @@ void Lod0Geometry(
     // Plane 1
     grassDirection = float3(1, 0, 0);
     grassDirection = cross(grassDirection, normal);
+
+    //currentVPos += float3(0.4, 0.3, 0.4) * (random(currentVPos) * 2 - 1);
 
     grassVPosBL = currentVPos - grassDirection * scale;
     grassVPosTL = currentVPosUp - grassDirection * scale;
@@ -277,19 +277,18 @@ void GrassGeometry(
     float distance = sqrt(posDiffX*posDiffX + posDiffY*posDiffY + posDiffZ*posDiffZ);
     distance += random(currentVPos) * 8 - 4;
 
-    float scale = (_GrassSize + random(currentVPos) * 0.2);
 
     float distanceFade = distance / Lod2Radius;
-    currentVPos -= normal * scale * pow(distanceFade, 2);
+    currentVPos -= normal * _GrassSize * pow(distanceFade, 2);
 
     // Grass growth direction
     //float3 currentVPosUp = currentVPos + normal;                                  // surface normal
-    float3 currentVPosUp = currentVPos + (normal + float3(0, scale, 0)) / 2;        // average
-    //float3 currentVPosUp = currentVPos + float3(0, scale, 0);                     // up
+    float3 currentVPosUp = currentVPos + (normal + float3(0, _GrassSize, 0)) / 2;        // average
+    //float3 currentVPosUp = currentVPos + float3(0, _GrassSize, 0);                     // up
 
     // Generating geometry using LODs
     UNITY_BRANCH
-    if (distance < Lod0Radius) Lod0Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
-    else if (distance < Lod1Radius) Lod1Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
-    else if (distance < Lod2Radius) Lod2Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, scale, outStream);
+    if (distance < Lod0Radius) Lod0Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize, outStream);
+    else if (distance < Lod1Radius) Lod1Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize, outStream);
+    else if (distance < Lod2Radius) Lod2Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize, outStream);
 }
