@@ -44,18 +44,40 @@ float GetWind(float2 uv)
 // Vertex output from geometry
 PackedVaryingsType VertexOutput(
     AttributesMesh source,
-    float3 position, float3 prev_position, half3 normal, float2 uv0 = 0, float2 uv1 = 0,
-    half emission = 0, half rnd = 0, half3 bary_coord = 0.5
-    )
+    float3 position, float3 prev_position, half3 normal, float2 uv0 = 0,
+    half emission = 0, half rnd = 0, half3 bary_coord = 0.5)
 {
     // We omit the z component of bary_coord
     half4 color = half4(bary_coord.xy, emission, rnd);
 
     // Wind animation
     float3 positionWithWind = position;
-    positionWithWind += float3(uv1.x, uv1.y, uv1.x) * float3(WindStrengthXZ, WindStrengthY, WindStrengthXZ) * GetWind(position * WindScale + _TimeParameters.xx * WindSpeed);
+    positionWithWind += float3(uv0.y, uv0.y, uv0.y) * float3(WindStrengthXZ, WindStrengthY, WindStrengthXZ) * GetWind(position * WindScale + _TimeParameters.xx * WindSpeed);
 
     return PackVertexData(source, positionWithWind, prev_position, normal, uv0, color);
+}
+
+//
+//
+// Generate quad helper function
+void GenerateGrassQuad(AttributesMesh inputVertex,
+    float3 grassVPosBL,
+    float3 grassVPosTL,
+    float3 grassVPosTR,
+    float3 grassVPosBR,
+    float3 previousVPos,
+    float3 faceNormal,
+    inout TriangleStream<PackedVaryingsType> outStream)
+{
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    outStream.RestartStrip();
+
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.RestartStrip();
 }
 
 //
@@ -68,8 +90,7 @@ void Lod0Geometry(
     float3 previousVPos,
     float3 normal,
     float scale,
-    inout TriangleStream<PackedVaryingsType> outStream
-    )
+    inout TriangleStream<PackedVaryingsType> outStream)
 {
     float3 grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR; // B ottom L eft R ight T op
     float3 faceNormal = normal;
@@ -79,8 +100,6 @@ void Lod0Geometry(
     grassDirection = float3(1, 0, 0);
     grassDirection = cross(grassDirection, normal);
 
-    //currentVPos += float3(0.4, 0.3, 0.4) * (random(currentVPos) * 2 - 1);
-
     grassVPosBL = currentVPos - grassDirection * scale;
     grassVPosTL = currentVPosUp - grassDirection * scale;
     grassVPosTR = currentVPosUp + grassDirection * scale;
@@ -88,16 +107,7 @@ void Lod0Geometry(
     #ifdef USE_CORRECT_GRASS_NORMALS
         faceNormal = cross(normal, grassDirection);
     #endif
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.RestartStrip();
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.RestartStrip();
+    GenerateGrassQuad(inputVertex, grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR, previousVPos, faceNormal, outStream);
 
     // Plane 2
     grassDirection = float3(0.7071067811865475, 0, 0.7071067811865475);
@@ -110,16 +120,7 @@ void Lod0Geometry(
     #ifdef USE_CORRECT_GRASS_NORMALS
         faceNormal = cross(normal, grassDirection);
     #endif
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.RestartStrip();
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.RestartStrip();
+    GenerateGrassQuad(inputVertex, grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR, previousVPos, faceNormal, outStream);
 
     // Plane 3
     grassDirection = float3(-0.7071067811865475, 0, 0.7071067811865475);
@@ -132,16 +133,7 @@ void Lod0Geometry(
     #ifdef USE_CORRECT_GRASS_NORMALS
         faceNormal = cross(normal, grassDirection);
     #endif
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.RestartStrip();
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.RestartStrip();
+    GenerateGrassQuad(inputVertex, grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR, previousVPos, faceNormal, outStream);
 }
 
 //
@@ -154,8 +146,7 @@ void Lod1Geometry(
     float3 previousVPos,
     float3 normal,
     float scale,
-    inout TriangleStream<PackedVaryingsType> outStream
-    )
+    inout TriangleStream<PackedVaryingsType> outStream)
 {
     float3 grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR; // B ottom L eft R ight T op
     float3 faceNormal = normal;
@@ -172,16 +163,7 @@ void Lod1Geometry(
     #ifdef USE_CORRECT_GRASS_NORMALS
         faceNormal = cross(normal, grassDirection);
     #endif
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.RestartStrip();
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.RestartStrip();
+    GenerateGrassQuad(inputVertex, grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR, previousVPos, faceNormal, outStream);
 
     // Z plane
     grassDirection = float3(0, 0, 1);
@@ -194,16 +176,7 @@ void Lod1Geometry(
     #ifdef USE_CORRECT_GRASS_NORMALS
         faceNormal = cross(normal, grassDirection);
     #endif
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.RestartStrip();
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.RestartStrip();
+    GenerateGrassQuad(inputVertex, grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR, previousVPos, faceNormal, outStream);
 }
 
 //
@@ -216,8 +189,7 @@ void Lod2Geometry(
     float3 previousVPos,
     float3 normal,
     float scale,
-    inout TriangleStream<PackedVaryingsType> outStream
-    )
+    inout TriangleStream<PackedVaryingsType> outStream)
 {
     float3 grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR; // B ottom L eft R ight T op
     float3 faceNormal = normal;
@@ -231,16 +203,7 @@ void Lod2Geometry(
     #ifdef USE_CORRECT_GRASS_NORMALS
         faceNormal = cross(normal, grassDirection);
     #endif
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.RestartStrip();
-
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1), float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0), float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0), float2(0, 0)));
-    outStream.RestartStrip();
+    GenerateGrassQuad(inputVertex, grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR, previousVPos, faceNormal, outStream);
 }
 
 //
@@ -250,8 +213,7 @@ void Lod2Geometry(
 void GrassGeometry(
     uint pid : SV_PrimitiveID,
     point Attributes input[1],
-    inout TriangleStream<PackedVaryingsType> outStream
-    )
+    inout TriangleStream<PackedVaryingsType> outStream)
 {
     // Input data
     AttributesMesh inputVertex = ConvertToAttributesMesh(input[0]);
