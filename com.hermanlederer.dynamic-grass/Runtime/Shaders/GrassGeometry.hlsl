@@ -194,7 +194,7 @@ void Lod2Geometry(
     float3 grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR; // B ottom L eft R ight T op
     float3 faceNormal = normal;
 
-    float3 viewDir = mul((float3x3) _ViewMatrix, float3(1, 0, 0));
+    float3 viewDir = mul((float3x3) _ViewMatrix, float3(1, 0, 0))  * float3(1, 0, 1);
     float3 grassDirection = viewDir;
     grassVPosBL = currentVPos - grassDirection * scale;
     grassVPosTL = currentVPosUp - grassDirection * scale;
