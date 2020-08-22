@@ -3,7 +3,7 @@
 //
 //
 // Parameters
-float _GrassSize;
+float4 _GrassSize;
 float4 _LodCenter; // x y z lod center, w discarded
 float4 _LodCascades; // x lod0, y lod1, z lod2, w discarded
 float4 _WindParams; // x xz strength, y y strength, z speed, w scale
@@ -69,14 +69,18 @@ void GenerateGrassQuad(AttributesMesh inputVertex,
     float3 faceNormal,
     inout TriangleStream<PackedVaryingsType> outStream)
 {
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(0, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
+    float uvx = round(random(previousVPos) + 0.4) * 0.5;
+    float uvLow = uvx;
+    float uvHigh = uvx + 0.5;
+
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(uvLow, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTL, previousVPos, faceNormal, float2(uvLow, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(uvHigh, 1)));
     outStream.RestartStrip();
 
-    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(1, 1)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(1, 0)));
-    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(0, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosTR, previousVPos, faceNormal, float2(uvHigh, 1)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBR, previousVPos, faceNormal, float2(uvHigh, 0)));
+    outStream.Append(VertexOutput(inputVertex, grassVPosBL, previousVPos, faceNormal, float2(uvLow, 0)));
     outStream.RestartStrip();
 }
 
@@ -241,16 +245,16 @@ void GrassGeometry(
 
 
     float distanceFade = distance / Lod2Radius;
-    currentVPos -= normal * _GrassSize * pow(distanceFade, 2);
+    currentVPos -= normal * _GrassSize.y * pow(distanceFade, 2);
 
     // Grass growth direction
     //float3 currentVPosUp = currentVPos + normal;                                  // surface normal
-    float3 currentVPosUp = currentVPos + (normal + float3(0, _GrassSize, 0)) / 2;        // average
-    //float3 currentVPosUp = currentVPos + float3(0, _GrassSize, 0);                     // up
+    float3 currentVPosUp = currentVPos + (normal + float3(0, _GrassSize.y*2, 0)) / 2;        // average
+    //float3 currentVPosUp = currentVPos + float3(0, _GrassSize.y*2, 0);                     // up
 
     // Generating geometry using LODs
     UNITY_BRANCH
-    if (distance < Lod0Radius) Lod0Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize, outStream);
-    else if (distance < Lod1Radius) Lod1Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize, outStream);
-    else if (distance < Lod2Radius) Lod2Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize, outStream);
+    if (distance < Lod0Radius) Lod0Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize.x, outStream);
+    else if (distance < Lod1Radius) Lod1Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize.x, outStream);
+    else if (distance < Lod2Radius) Lod2Geometry(inputVertex, currentVPos, currentVPosUp, previousVPos, normal, _GrassSize.x, outStream);
 }

@@ -18,7 +18,7 @@ namespace DynamicGrass
 		// Editor varaibles
 		[Header("Grass")]
 		[SerializeField] private Vector4 lodCascades = Vector4.zero;
-		[SerializeField] private float grassSize = 0.5f;
+		[SerializeField] private Vector2 grassSize = Vector2.one;
 		[SerializeField] [Range(0, 65536)] private int grassAmount = 0;
 		[SerializeField] [Range(0, 180)] private float slopeThreshold = 45;
 
@@ -69,7 +69,7 @@ namespace DynamicGrass
 			_sheet.SetMatrix(ShaderIDs.EffSpace, espace_obj);
 			_sheet.SetVector(ShaderIDs.LodCenter, lodCenterVec4);
 			_sheet.SetVector(Shader.PropertyToID("_LodCascades"), lodCascades);
-			_sheet.SetFloat(ShaderIDs.GrassSize, grassSize);
+			_sheet.SetVector(ShaderIDs.GrassSize, grassSize);
 			_sheet.SetVector(Shader.PropertyToID("_TimeParameters"), new Vector4(Time.time, Mathf.Sin(Time.time), 0, 0));
 			_sheet.SetVector(Shader.PropertyToID("_WindParams"), new Vector4(windStrength.x, windStrength.y, windSpeed, windScale));
 			meshRenderer.SetPropertyBlock(_sheet);
