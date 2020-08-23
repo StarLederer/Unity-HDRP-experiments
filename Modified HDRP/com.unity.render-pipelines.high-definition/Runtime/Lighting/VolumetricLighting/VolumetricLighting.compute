@@ -176,7 +176,7 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
     // CUSTOM NOTE: This seems to "load" sadows into LightLoopContext.
     // It can be skipped, than you'll have no volumetric shadows and light will pass through everything.
     // I could use depth buffer to cut the effect off when applying it to make thing occlude lights
-    /*if (_DirectionalShadowIndex >= 0)
+    if (_DirectionalShadowIndex >= 0)
     {
         DirectionalLightData light = _DirectionalLightDatas[_DirectionalShadowIndex];
 
@@ -197,7 +197,7 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
                                                                   posInput.positionSS, posInput.positionWS, shadowN,
                                                                   light.shadowIndex, L);
         }
-    }*/
+    }
     // CUSTOM: Commented that out since it seems to do nothing, context.shadowValue is already assigned above
     // I think they had this before the assignment above and than added it to get rid of
     // "usage of potentially unassigned variable" warning in unity console and
@@ -233,9 +233,8 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
             float3 shadowN = L;
 
             // This code works for both surface reflection and thin object transmission.
-            // CUSTOM: we are not using shadows so no need to execute this code
-            //float shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
-            //lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
+            float shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
+            lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
 
             // Important:
             // Ideally, all scattering calculations should use the jittered versions
@@ -259,7 +258,7 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
     }
 
     // CUSTOM: Cut the effect off using depth buffer
-    float2 pos = posInput.positionSS;
+    /*float2 pos = posInput.positionSS;
     pos = pos * 8; // resolution
     float depth = LoadCameraDepth(pos);
     float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
@@ -268,7 +267,7 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
     float depthFilter = step(5000, linearEyeDepth);
 
     lighting.radianceNoPhase *= depthFilter;
-    lighting.radianceComplete *= depthFilter;
+    lighting.radianceComplete *= depthFilter;*/
 
     return lighting;
 }
