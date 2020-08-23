@@ -95,6 +95,7 @@ CBUFFER_START(UnityVolumetricLighting)
     float    _VBufferUnitDepthTexelSpacing;
     uint     _NumVisibleDensityVolumes;         // Not used by this shader
     float    _CornetteShanksConstant;
+    //float4   _FogEmission;                      // CUSTOM: Added fog emission parameter
     uint     _VBufferLightingHistoryIsValid;
 
     float4   _VBufferSampleOffset;
@@ -455,41 +456,38 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
 {
     uint lightCount, lightStart;
 
-#ifdef USE_BIG_TILE_LIGHTLIST
-    // Offset for stereo rendering
-    tileIndex += unity_StereoEyeIndex * _NumTileBigTileX * _NumTileBigTileY;
+    #ifdef USE_BIG_TILE_LIGHTLIST
+        // Offset for stereo rendering
+        tileIndex += unity_StereoEyeIndex * _NumTileBigTileX * _NumTileBigTileY;
 
-    // The "big tile" list contains the number of objects contained within the tile followed by the
-    // list of object indices. Note that while objects are already sorted by type, we don't know the
-    // number of each type of objects (e.g. lights), so we should remember to break out of the loop.
-    lightCount = g_vBigTileLightList[MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex];
-    lightStart = MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex + 1;
+        // The "big tile" list contains the number of objects contained within the tile followed by the
+        // list of object indices. Note that while objects are already sorted by type, we don't know the
+        // number of each type of objects (e.g. lights), so we should remember to break out of the loop.
+        lightCount = g_vBigTileLightList[MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex];
+        lightStart = MAX_NR_BIG_TILE_LIGHTS_PLUS_ONE * tileIndex + 1;
 
-    // For now, iterate through all the objects to determine the correct range.
-    // TODO: precompute this, of course.
-    {
-        uint offset = 0;
-
-        for (; offset < lightCount; offset++)
+        // For now, iterate through all the objects to determine the correct range.
+        // TODO: precompute this, of course.
         {
-            uint objectIndex = FetchIndex(lightStart, offset);
+            uint offset = 0;
 
-            if (objectIndex >= _EnvLightIndexShift)
+            for (; offset < lightCount; offset++)
             {
-                // We have found the last local analytical light.
-                break;
+                uint objectIndex = FetchIndex(lightStart, offset);
+
+                if (objectIndex >= _EnvLightIndexShift)
+                {
+                    // We have found the last local analytical light.
+                    break;
+                }
             }
+
+            lightCount = offset;
         }
-
-        lightCount = offset;
-    }
-
-#else  // USE_BIG_TILE_LIGHTLIST
-
-    lightCount = _PunctualLightCount;
-    lightStart = 0;
-
-#endif // USE_BIG_TILE_LIGHTLIST
+    #else  // USE_BIG_TILE_LIGHTLIST
+        lightCount = _PunctualLightCount;
+        lightStart = 0;
+    #endif // USE_BIG_TILE_LIGHTLIST
 
     float t0 = DecodeLogarithmicDepthGeneralized(0, _VBufferDistanceDecodingParams);
     float de = _VBufferRcpSliceCount; // Log-encoded distance between slices
@@ -534,13 +532,13 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         // https://en.wikipedia.org/wiki/Stochastic_universal_sampling
         float perPixelRandomOffset = GenerateHashedRandomFloat(posInput.positionSS);
 
-    #if ENABLE_REPROJECTION
-        // This is a time-based sequence of 7 equidistant numbers from 1/14 to 13/14.
-        // Each of them is the centroid of the interval of length 2/14.
-        float rndVal = frac(perPixelRandomOffset + _VBufferSampleOffset.z);
-    #else
-        float rndVal = frac(perPixelRandomOffset + 0.5);
-    #endif
+        #if ENABLE_REPROJECTION
+            // This is a time-based sequence of 7 equidistant numbers from 1/14 to 13/14.
+            // Each of them is the centroid of the interval of length 2/14.
+            float rndVal = frac(perPixelRandomOffset + _VBufferSampleOffset.z);
+        #else
+            float rndVal = frac(perPixelRandomOffset + 0.5);
+        #endif
 
         VoxelLighting aggregateLighting;
         ZERO_INITIALIZE(VoxelLighting, aggregateLighting);
@@ -567,17 +565,17 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         }
         #endif
 
-    #if ENABLE_REPROJECTION
-        // Clamp here to prevent generation of NaNs.
-        float4 voxelValue           = float4(aggregateLighting.radianceNoPhase, extinction * dt);
-        float4 linearizedVoxelValue = LinearizeRGBD(voxelValue);
-        float4 normalizedVoxelValue = linearizedVoxelValue * rcp(dt);
-        float4 normalizedBlendValue = normalizedVoxelValue;
+        #if ENABLE_REPROJECTION
+            // Clamp here to prevent generation of NaNs.
+            float4 voxelValue           = float4(aggregateLighting.radianceNoPhase, extinction * dt);
+            float4 linearizedVoxelValue = LinearizeRGBD(voxelValue);
+            float4 normalizedVoxelValue = linearizedVoxelValue * rcp(dt);
+            float4 normalizedBlendValue = normalizedVoxelValue;
 
-    #if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0) && defined(USING_STEREO_MATRICES)
-        // With XR single-pass, remove the camera-relative offset for the reprojected sample
-        centerWS -= _WorldSpaceCameraPosViewOffset;
-    #endif
+        #if (SHADEROPTIONS_CAMERA_RELATIVE_RENDERING != 0) && defined(USING_STEREO_MATRICES)
+            // With XR single-pass, remove the camera-relative offset for the reprojected sample
+            centerWS -= _WorldSpaceCameraPosViewOffset;
+        #endif
 
         // Reproject the history at 'centerWS'.
         float4 reprojValue = SampleVBuffer(TEXTURE3D_ARGS(_VBufferLightingHistory, s_linear_clamp_sampler),
@@ -608,50 +606,59 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         float4 linearizedBlendValue = normalizedBlendValue * dt;
         float4 blendValue = DelinearizeRGBD(linearizedBlendValue);
 
-    #if ENABLE_ANISOTROPY
-        // Estimate the influence of the phase function on the results of the current frame.
-        float3 phaseCurrFrame;
+        #if ENABLE_ANISOTROPY
+            // Estimate the influence of the phase function on the results of the current frame.
+            float3 phaseCurrFrame;
 
-        phaseCurrFrame.r = SafeDiv(aggregateLighting.radianceComplete.r, aggregateLighting.radianceNoPhase.r);
-        phaseCurrFrame.g = SafeDiv(aggregateLighting.radianceComplete.g, aggregateLighting.radianceNoPhase.g);
-        phaseCurrFrame.b = SafeDiv(aggregateLighting.radianceComplete.b, aggregateLighting.radianceNoPhase.b);
+            phaseCurrFrame.r = SafeDiv(aggregateLighting.radianceComplete.r, aggregateLighting.radianceNoPhase.r);
+            phaseCurrFrame.g = SafeDiv(aggregateLighting.radianceComplete.g, aggregateLighting.radianceNoPhase.g);
+            phaseCurrFrame.b = SafeDiv(aggregateLighting.radianceComplete.b, aggregateLighting.radianceNoPhase.b);
 
-        // Warning: in general, this does not work!
-        // For a voxel with a single light, 'phaseCurrFrame' is monochromatic, and since
-        // we don't jitter anisotropy, its value does not change from frame to frame
-        // for a static camera/scene. This is fine.
-        // If you have two lights per voxel, we compute:
-        // phaseCurrFrame = (phaseA * lightingA + phaseB * lightingB) / (lightingA + lightingB).
-        // 'phaseA' and 'phaseB' are still (different) constants for a static camera/scene.
-        // 'lightingA' and 'lightingB' are jittered, so they change from frame to frame.
-        // Therefore, 'phaseCurrFrame' becomes temporarily unstable and can cause flickering in practice. :-(
-        blendValue.rgb *= phaseCurrFrame;
-    #endif // ENABLE_ANISOTROPY
+            // Warning: in general, this does not work!
+            // For a voxel with a single light, 'phaseCurrFrame' is monochromatic, and since
+            // we don't jitter anisotropy, its value does not change from frame to frame
+            // for a static camera/scene. This is fine.
+            // If you have two lights per voxel, we compute:
+            // phaseCurrFrame = (phaseA * lightingA + phaseB * lightingB) / (lightingA + lightingB).
+            // 'phaseA' and 'phaseB' are still (different) constants for a static camera/scene.
+            // 'lightingA' and 'lightingB' are jittered, so they change from frame to frame.
+            // Therefore, 'phaseCurrFrame' becomes temporarily unstable and can cause flickering in practice. :-(
+            blendValue.rgb *= phaseCurrFrame;
+        #endif // ENABLE_ANISOTROPY
 
-    #else // ENABLE_REPROJECTION
+        #else // ENABLE_REPROJECTION
 
-    #if ENABLE_ANISOTROPY
-        float4 blendValue = float4(aggregateLighting.radianceComplete, extinction * dt);
-    #else
-        float4 blendValue = float4(aggregateLighting.radianceNoPhase,  extinction * dt);
-    #endif // ENABLE_ANISOTROPY
+        #if ENABLE_ANISOTROPY
+            float4 blendValue = float4(aggregateLighting.radianceComplete, extinction * dt);
+        #else
+            float4 blendValue = float4(aggregateLighting.radianceNoPhase,  extinction * dt);
+        #endif // ENABLE_ANISOTROPY
 
-    #endif // ENABLE_REPROJECTION
+        #endif // ENABLE_REPROJECTION
 
         // Compute the transmittance from the camera to 't0'.
         float transmittance = TransmittanceFromOpticalDepth(opticalDepth);
 
-    #if ENABLE_ANISOTROPY
-        float phase = _CornetteShanksConstant;
-    #else
-        float phase = IsotropicPhaseFunction();
-    #endif // ENABLE_ANISOTROPY
+        #if ENABLE_ANISOTROPY
+            float phase = _CornetteShanksConstant;
+        #else
+            float phase = IsotropicPhaseFunction();
+        #endif // ENABLE_ANISOTROPY
 
         // Integrate the contribution of the probe over the interval.
         // Integral{a, b}{Transmittance(0, t) * L_s(t) dt} = Transmittance(0, a) * Integral{a, b}{Transmittance(0, t - a) * L_s(t) dt}.
         float3 probeRadiance = probeInScatteredRadiance * TransmittanceIntegralHomogeneousMedium(extinction, dt);
 
-        totalRadiance += transmittance * scattering * (phase * blendValue.rgb + probeRadiance);
+        // CUSTOM
+        // NOTE/TODO: I think i need to simply add rainbow radiance here, maybe
+        // i'll have to combine it with blend value
+        // transmittance    -   How much light is there?
+        // scattering       -   How much light is scattered there?
+        // blendValue       -   Emmited light
+        // probeRadiance    -   Ambient light
+        //totalRadiance += transmittance * scattering * (phase * blendValue.rgb + probeRadiance);
+        //totalRadiance += transmittance * scattering * (phase * blendValue.rgb + probeRadiance + _FogEmission);
+          totalRadiance += transmittance * scattering * (phase * blendValue.rgb + probeRadiance);
 
         // Compute the optical depth up to the center of the interval.
         opticalDepth += 0.5 * blendValue.a;
@@ -714,12 +721,12 @@ void VolumetricLighting(uint3 dispatchThreadId : SV_DispatchThreadID,
     ray.xDirDerivWS = rightDirWS * (rcpLenRightDir * unitDistFaceSize); // Normalize & rescale
     ray.yDirDerivWS = cross(ray.xDirDerivWS, ray.centerDirWS); // Will have the length of 'unitDistFaceSize' by construction
 
-#if ENABLE_REPROJECTION
-    ray.jitterDirWS = normalize(ray.centerDirWS + _VBufferSampleOffset.x * ray.xDirDerivWS
-                                                + _VBufferSampleOffset.y * ray.yDirDerivWS);
-#else
-    ray.jitterDirWS = ray.centerDirWS;
-#endif
+    #if ENABLE_REPROJECTION
+        ray.jitterDirWS = normalize(ray.centerDirWS + _VBufferSampleOffset.x * ray.xDirDerivWS
+                                                    + _VBufferSampleOffset.y * ray.yDirDerivWS);
+    #else
+        ray.jitterDirWS = ray.centerDirWS;
+    #endif
 
     PositionInputs posInput = GetPositionInput(voxelCoord, _VBufferViewportSize.zw, tileCoord);
 

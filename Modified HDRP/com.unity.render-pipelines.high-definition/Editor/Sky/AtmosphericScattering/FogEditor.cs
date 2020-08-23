@@ -20,6 +20,7 @@ namespace UnityEditor.Rendering.HighDefinition
         protected SerializedDataParameter m_BaseHeight;
         protected SerializedDataParameter m_MaximumHeight;
         protected SerializedDataParameter m_Anisotropy;
+        protected SerializedDataParameter m_Emission; // CUSTOM
         protected SerializedDataParameter m_GlobalLightProbeDimmer;
         protected SerializedDataParameter m_EnableVolumetricFog;
         protected SerializedDataParameter m_DepthExtent;
@@ -32,6 +33,7 @@ namespace UnityEditor.Rendering.HighDefinition
         static GUIContent s_BaseHeightLabel = new GUIContent("Base Height", "Reference height (e.g. sea level). Sets the height of the boundary between the constant and exponential fog.");
         static GUIContent s_MaximumHeightLabel = new GUIContent("Maximum Height", "Max height of the fog layer. Controls the rate of height-based density falloff. Units: m.");
         static GUIContent s_AnisotropyLabel = new GUIContent("Anisotropy", "Controls the angular distribution of scattered light. 0 is isotropic, 1 is forward scattering, and -1 is backward scattering.");
+        static GUIContent s_EmissionLabel = new GUIContent("Emission", "Controls the emission color of the fog."); // CUSTOM
         static GUIContent s_GlobalLightProbeDimmerLabel = new GUIContent("Ambient Light Probe Dimmer", "Controls the intensity reduction of the global Light Probe that the sky generates.");
         static GUIContent s_EnableVolumetricFog = new GUIContent("Volumetric Fog", "When enabled, activates volumetric fog.");
 
@@ -55,6 +57,7 @@ namespace UnityEditor.Rendering.HighDefinition
             m_BaseHeight = Unpack(o.Find(x => x.baseHeight));
             m_MaximumHeight = Unpack(o.Find(x => x.maximumHeight));
             m_Anisotropy = Unpack(o.Find(x => x.anisotropy));
+            m_Emission = Unpack(o.Find(x => x.emission)); // CUSTOM
             m_GlobalLightProbeDimmer = Unpack(o.Find(x => x.globalLightProbeDimmer));
             m_EnableVolumetricFog = Unpack(o.Find(x => x.enableVolumetricFog));
             m_DepthExtent = Unpack(o.Find(x => x.depthExtent));
@@ -107,6 +110,7 @@ namespace UnityEditor.Rendering.HighDefinition
                     EditorGUI.indentLevel++;
                     PropertyField(m_Albedo, s_AlbedoLabel);
                     PropertyField(m_Anisotropy, s_AnisotropyLabel);
+                    PropertyField(m_Emission, s_EmissionLabel); // CUSTOM
                     PropertyField(m_GlobalLightProbeDimmer, s_GlobalLightProbeDimmerLabel);
 
                     if (isInAdvancedMode)

@@ -92,7 +92,7 @@ namespace UnityEngine.Rendering.HighDefinition
         /// <returns>The approximated ray count for a frame</returns>
         public uint GetRaysPerFrame(RayCountValues rayValues) { return m_RayCountManager.GetRaysPerFrame(rayValues); }
 
-        // Renderer Bake configuration can vary depends on if shadow mask is enabled or no
+        // Renderer Bake configuration can vary depending on if shadow mask is enabled or not
         PerObjectData m_CurrentRendererConfigurationBakedLighting = HDUtils.k_RendererConfigurationBakedLighting;
         MaterialPropertyBlock m_CopyDepthPropertyBlock = new MaterialPropertyBlock();
         Material m_CopyDepth;

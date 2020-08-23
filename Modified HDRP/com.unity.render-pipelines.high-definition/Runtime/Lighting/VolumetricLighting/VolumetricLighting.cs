@@ -711,6 +711,7 @@ namespace UnityEngine.Rendering.HighDefinition
             public int              numBigTileX, numBigTileY;
             public float            unitDepthTexelSpacing;
             public float            anisotropy;
+            public Vector4          emission; // CUSTOM
             public Vector4          xySeqOffset;
             public bool             enableReprojection;
             public bool             historyIsValid;
@@ -752,6 +753,7 @@ namespace UnityEngine.Rendering.HighDefinition
             parameters.unitDepthTexelSpacing = HDUtils.ComputZPlaneTexelSpacing(1.0f, vFoV, parameters.resolution.y);
 
             parameters.anisotropy = fog.anisotropy.value;
+            parameters.emission = fog.emission.value; // CUSTOM
             parameters.historyIsValid = hdCamera.volumetricHistoryIsValid;
             parameters.viewCount = hdCamera.viewCount;
             parameters.numBigTileX = GetNumTileBigTileX(hdCamera);
@@ -780,11 +782,13 @@ namespace UnityEngine.Rendering.HighDefinition
             if (parameters.tiledLighting)
                 cmd.SetComputeBufferParam(parameters.volumetricLightingCS, parameters.volumetricLightingKernel, HDShaderIDs.g_vBigTileLightList, bigTileLightList);
 
-                // TODO: set 'm_VolumetricLightingPreset'.
-                // TODO: set the constant buffer data only once.
+            // TODO: set 'm_VolumetricLightingPreset'.
+            // TODO: set the constant buffer data only once.
+            // CUSTOM: Added fog emission parameter
             cmd.SetComputeMatrixArrayParam(parameters.volumetricLightingCS, HDShaderIDs._VBufferCoordToViewDirWS, parameters.pixelCoordToViewDirWS);
             cmd.SetComputeFloatParam(parameters.volumetricLightingCS, HDShaderIDs._VBufferUnitDepthTexelSpacing, parameters.unitDepthTexelSpacing);
             cmd.SetComputeFloatParam(parameters.volumetricLightingCS, HDShaderIDs._CornetteShanksConstant, CornetteShanksPhasePartConstant(parameters.anisotropy));
+            //cmd.SetComputeVectorParam(parameters.volumetricLightingCS, Shader.PropertyToID("_FogEmission"), parameters.emission); // CUSTOM
             cmd.SetComputeVectorParam(parameters.volumetricLightingCS, HDShaderIDs._VBufferSampleOffset, parameters.xySeqOffset);
             cmd.SetComputeTextureParam(parameters.volumetricLightingCS, parameters.volumetricLightingKernel, HDShaderIDs._VBufferDensity, densityBuffer);  // Read
             cmd.SetComputeTextureParam(parameters.volumetricLightingCS, parameters.volumetricLightingKernel, HDShaderIDs._VBufferLightingIntegral, lightingBuffer); // Write
@@ -838,6 +842,7 @@ namespace UnityEngine.Rendering.HighDefinition
             }
 
             // Let's filter out volumetric buffer
+            // Sure, let's do it
             if (parameters.filterVolume)
                 FilterVolumetricLighting(parameters, m_DensityBufferHandle, m_LightingBufferHandle, cmd);
         }

@@ -38,6 +38,7 @@ namespace UnityEngine.Rendering.HighDefinition
         // Optional Volumetric Fog
         public BoolParameter enableVolumetricFog = new BoolParameter(false);
         public ClampedFloatParameter anisotropy = new ClampedFloatParameter(0.0f, -1.0f, 1.0f);
+        public ColorParameter emission = new ColorParameter(Color.black, hdr: true, showAlpha: false, showEyeDropper: true); // CUSTOM
         public ClampedFloatParameter globalLightProbeDimmer = new ClampedFloatParameter(1.0f, 0.0f, 1.0f);
 
         [Tooltip("Sets the distance (in meters) from the Camera's Near Clipping Plane to the back of the Camera's volumetric lighting buffer.")]
