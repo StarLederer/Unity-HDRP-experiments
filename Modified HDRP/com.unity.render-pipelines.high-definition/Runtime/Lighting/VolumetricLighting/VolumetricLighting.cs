@@ -234,6 +234,7 @@ namespace UnityEngine.Rendering.HighDefinition
         {
             Vector3Int resolution = ComputeVBufferResolution(volumetricLightingPreset, screenSize.x, screenSize.y);
 
+
             return new Vector2Int(resolution.x, resolution.y);
         }
 
@@ -841,8 +842,7 @@ namespace UnityEngine.Rendering.HighDefinition
                     hdCamera.volumetricHistoryIsValid = true; // For the next frame...
             }
 
-            // Let's filter out volumetric buffer
-            // Sure, let's do it
+            // Let's filter volumetric buffer
             if (parameters.filterVolume)
                 FilterVolumetricLighting(parameters, m_DensityBufferHandle, m_LightingBufferHandle, cmd);
         }
