@@ -215,59 +215,88 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
         light.contactShadowMask  = 0;
         light.shadowDimmer       = light.volumetricShadowDimmer;
 
-        // CUSTOM NOTE: Inverting this gives you antisolar ray
-        // that's something i really need, so good finding!
-        float3 L = -light.forward;
-
         // Is it worth evaluating the light?
         float3 color; float attenuation;
         if (light.volumetricLightDimmer > 0)
         {
-            float4 lightColor = EvaluateLight_Directional(context, posInput, light);
-            // The volumetric light dimmer, unlike the regular light dimmer, is not pre-multiplied.
-            lightColor.a *= light.volumetricLightDimmer;
-            lightColor.rgb *= lightColor.a; // Composite
+            // Unity volumetric scattering
+            {
+                // Solar ray
+                float3 L = light.forward;
 
-            // Pass the light direction as the normal to avoid issues with shadow biasing code.
-            // TODO: does it make sense?
-            float3 shadowN = L;
+                float4 lightColor = EvaluateLight_Directional(context, posInput, light);
+                // The volumetric light dimmer, unlike the regular light dimmer, is not pre-multiplied.
+                lightColor.a *= light.volumetricLightDimmer;
+                lightColor.rgb *= lightColor.a; // Composite
 
-            // This code works for both surface reflection and thin object transmission.
-            float shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
-            lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
+                // Pass the light direction as the normal to avoid issues with shadow biasing code.
+                // TODO: does it make sense?
+                float3 shadowN = -L;
 
-            // Important:
-            // Ideally, all scattering calculations should use the jittered versions
-            // of the sample position and the ray direction. However, correct reprojection
-            // of asymmetrically scattered lighting (affected by an anisotropic phase
-            // function) is not possible. We work around this issue by reprojecting
-            // lighting not affected by the phase function. This basically removes
-            // the phase function from the temporal integration process. It is a hack.
-            // The downside is that anisotropy no longer benefits from temporal averaging,
-            // and any temporal instability of anisotropy causes causes visible jitter.
-            // In order to stabilize the image, we use the voxel center for all
-            // anisotropy-related calculations.
-            float cosTheta = dot(L, ray.centerDirWS);
-            float phase    = CornetteShanksPhasePartVarying(anisotropy, cosTheta);
+                // This code works for both surface reflection and thin object transmission.
+                float shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
+                lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
 
-            // Compute the amount of in-scattered radiance.
-            // Note: the 'weight' accounts for transmittance from 't0' to 't'.
-            lighting.radianceNoPhase += (weight * lightColor.rgb);
-            lighting.radianceComplete += (weight * lightColor.rgb) * phase;
+                // Important:
+                // Ideally, all scattering calculations should use the jittered versions
+                // of the sample position and the ray direction. However, correct reprojection
+                // of asymmetrically scattered lighting (affected by an anisotropic phase
+                // function) is not possible. We work around this issue by reprojecting
+                // lighting not affected by the phase function. This basically removes
+                // the phase function from the temporal integration process. It is a hack.
+                // The downside is that anisotropy no longer benefits from temporal averaging,
+                // and any temporal instability of anisotropy causes causes visible jitter.
+                // In order to stabilize the image, we use the voxel center for all
+                // anisotropy-related calculations.
+                float cosTheta = dot(-L, ray.centerDirWS);
+                float phase    = CornetteShanksPhasePartVarying(anisotropy, cosTheta);
+
+                // Compute the amount of in-scattered radiance.
+                // Note: the 'weight' accounts for transmittance from 't0' to 't'.
+                lighting.radianceNoPhase += (weight * lightColor.rgb);
+                lighting.radianceComplete += (weight * lightColor.rgb) * phase;
+            }
+
+            // CUSTOM: Rainbow go here?
+            {
+                // Antisolar ray
+                float3 L = -light.forward;
+
+                float4 lightColor = EvaluateLight_Directional(context, posInput, light);
+                // The volumetric light dimmer, unlike the regular light dimmer, is not pre-multiplied.
+                lightColor.a *= light.volumetricLightDimmer;
+                lightColor.rgb *= lightColor.a; // Composite
+
+                float3 shadowN = -L;
+
+                // This code works for both surface reflection and thin object transmission.
+                float shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
+                lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
+
+                float cosTheta = dot(-L, ray.centerDirWS);
+                float phase    = CornetteShanksPhasePartVarying(anisotropy, cosTheta);
+
+                // Compute the amount of in-scattered radiance.
+                // Note: the 'weight' accounts for transmittance from 't0' to 't'.
+                lighting.radianceNoPhase += (weight * lightColor.rgb);
+                lighting.radianceComplete += (weight * lightColor.rgb) * phase;
+
+                // CUSTOM: Cut the effect off using depth buffer
+                /*float2 pos = posInput.positionSS;
+                pos = pos * 8; // resolution
+                float depth = LoadCameraDepth(pos);
+                float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
+
+                // CUSTOM/TODO: Use light distance instead of 5000
+                float depthFilter = step(10, linearEyeDepth);*/
+
+                /*#define _RainbowIntensity 0.5
+                lighting.radianceNoPhase *= _RainbowIntensity;
+                lighting.radianceComplete *= _RainbowIntensity;*/
+            }
+
         }
     }
-
-    // CUSTOM: Cut the effect off using depth buffer
-    /*float2 pos = posInput.positionSS;
-    pos = pos * 8; // resolution
-    float depth = LoadCameraDepth(pos);
-    float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
-
-    // CUSTOM/TODO: Use light distance instead of 5000
-    float depthFilter = step(5000, linearEyeDepth);
-
-    lighting.radianceNoPhase *= depthFilter;
-    lighting.radianceComplete *= depthFilter;*/
 
     return lighting;
 }
