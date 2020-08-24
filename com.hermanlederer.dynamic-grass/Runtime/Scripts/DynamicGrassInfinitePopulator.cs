@@ -29,6 +29,7 @@ namespace DynamicGrass
 
 		[Header("Region")]
 		[SerializeField] private Vector3 boxSize = Vector3.zero;
+		[SerializeField] private LayerMask grassLayerMask = 0;
 
 		//
 		// Private variables
@@ -125,7 +126,7 @@ namespace DynamicGrass
 
 				Ray ray = new Ray(origin, Vector3.down);
 				RaycastHit hit;
-				if (Physics.Raycast(ray, out hit, boxSize.y))
+				if (Physics.Raycast(ray, out hit, boxSize.y, grassLayerMask))
 				{
 					DynamicGrassSurface surface = hit.transform.gameObject.GetComponent<DynamicGrassSurface>();
 					if (surface != null)

@@ -100,3 +100,6 @@ MonoBehaviour:
   windSpeed: 1
   windScale: 1
   boxSize: {x: 28, y: 32, z: 28}
+  grassLayerMask:
+    serializedVersion: 2
+    m_Bits: 512

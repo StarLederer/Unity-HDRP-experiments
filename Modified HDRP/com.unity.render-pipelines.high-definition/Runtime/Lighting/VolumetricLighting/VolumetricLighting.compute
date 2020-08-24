@@ -265,9 +265,6 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
 VoxelLighting EvaluateVoxelLightingDirectionalReflection(LightLoopContext context, uint featureFlags, PositionInputs posInput, float3 centerWS,
                                                          JitteredRay ray, float t0, float t1, float dt, float rndVal, float extinction, float anisotropy)
 {
-    #define _RainbowIntensity 0.5
-    #define _RainbowDistance 10
-
     VoxelLighting lighting;
     ZERO_INITIALIZE(VoxelLighting, lighting);
 
@@ -335,24 +332,33 @@ VoxelLighting EvaluateVoxelLightingDirectionalReflection(LightLoopContext contex
             float shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
             lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
 
-            float cosTheta = dot(-L, ray.centerDirWS);
-            float phase    = CornetteShanksPhasePartVarying(anisotropy, cosTheta);
+            float cosTheta = 1 - dot(-L, ray.centerDirWS);
+            float phase    = CornetteShanksPhasePartVarying(anisotropy, 1 - cosTheta);
 
             // Rainbow filtering
-            lightColor.rgb *= step(_RainbowParams.x, cosTheta);
-            lightColor.rgb *= step(cosTheta, _RainbowParams.y);
+            float minAngle = _RainbowParams.x;
+            float maxAngle = _RainbowParams.y;
+
+            lightColor.rgb *= step(minAngle, cosTheta);
+            lightColor.rgb *= step(cosTheta, maxAngle);
+
+            float rainbowCarryAmount = (cosTheta - minAngle) * (1 / (maxAngle - minAngle));
+            lightColor.rgb *= float3(smoothstep(0.6666-0.3333, 0.6666+0.3333, rainbowCarryAmount), 1, 1);
+            lightColor.rgb *= float3(1, smoothstep(0.3333-0.3333, 0.3333+0.3333, rainbowCarryAmount) * (1 - smoothstep(0.6666-0.3333, 0.6666+0.3333, rainbowCarryAmount)), 1);
+            lightColor.rgb *= float3(1, 1, 1 - smoothstep(0.3333-0.3333, 0.3333+0.3333, rainbowCarryAmount));
 
             // Depth
-            float2 pos = posInput.positionSS;
-            pos = pos * 8; // resolution
-            float depth = LoadCameraDepth(pos);
-            float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
-            float depthFilter = step(_RainbowParams.z, linearEyeDepth);
+            //float2 pos = posInput.positionSS;
+            //pos = pos * 8; // resolution
+            //float depth = LoadCameraDepth(pos);
+            //float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
+            //float depthFilter = step(_RainbowParams.z, linearEyeDepth);
+            float depthFilter = 1.0;
 
             // Compute the amount of in-scattered radiance.
             // Note: the 'weight' accounts for transmittance from 't0' to 't'.
-            lighting.radianceNoPhase += (weight * lightColor.rgb) * depthFilter;
-            lighting.radianceComplete += (weight * lightColor.rgb) * phase * depthFilter;
+            lighting.radianceNoPhase += (weight * lightColor.rgb) * depthFilter * 3 * _RainbowParams.w;
+            lighting.radianceComplete += (weight * lightColor.rgb) * phase * depthFilter * 3 * _RainbowParams.w;
         }
     }
 
