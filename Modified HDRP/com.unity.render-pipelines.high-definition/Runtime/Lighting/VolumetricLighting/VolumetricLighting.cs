@@ -713,6 +713,7 @@ namespace UnityEngine.Rendering.HighDefinition
             public float            unitDepthTexelSpacing;
             public float            anisotropy;
             public Vector4          emission; // CUSTOM
+            public Vector4          rainbowParameters; // CUSTOM
             public Vector4          xySeqOffset;
             public bool             enableReprojection;
             public bool             historyIsValid;
@@ -755,6 +756,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
             parameters.anisotropy = fog.anisotropy.value;
             parameters.emission = fog.emission.value; // CUSTOM
+            parameters.rainbowParameters = fog.rainbowParameters.value; // CUSTOM
             parameters.historyIsValid = hdCamera.volumetricHistoryIsValid;
             parameters.viewCount = hdCamera.viewCount;
             parameters.numBigTileX = GetNumTileBigTileX(hdCamera);
@@ -790,6 +792,7 @@ namespace UnityEngine.Rendering.HighDefinition
             cmd.SetComputeFloatParam(parameters.volumetricLightingCS, HDShaderIDs._VBufferUnitDepthTexelSpacing, parameters.unitDepthTexelSpacing);
             cmd.SetComputeFloatParam(parameters.volumetricLightingCS, HDShaderIDs._CornetteShanksConstant, CornetteShanksPhasePartConstant(parameters.anisotropy));
             //cmd.SetComputeVectorParam(parameters.volumetricLightingCS, Shader.PropertyToID("_FogEmission"), parameters.emission); // CUSTOM
+            cmd.SetComputeVectorParam(parameters.volumetricLightingCS, Shader.PropertyToID("_RainbowParams"), parameters.rainbowParameters); // CUSTOM
             cmd.SetComputeVectorParam(parameters.volumetricLightingCS, HDShaderIDs._VBufferSampleOffset, parameters.xySeqOffset);
             cmd.SetComputeTextureParam(parameters.volumetricLightingCS, parameters.volumetricLightingKernel, HDShaderIDs._VBufferDensity, densityBuffer);  // Read
             cmd.SetComputeTextureParam(parameters.volumetricLightingCS, parameters.volumetricLightingKernel, HDShaderIDs._VBufferLightingIntegral, lightingBuffer); // Write
