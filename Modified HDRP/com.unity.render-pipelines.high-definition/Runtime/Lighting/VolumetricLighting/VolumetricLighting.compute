@@ -255,110 +255,28 @@ VoxelLighting EvaluateVoxelLightingDirectional(LightLoopContext context, uint fe
             // Note: the 'weight' accounts for transmittance from 't0' to 't'.
             lighting.radianceNoPhase += (weight * lightColor.rgb);
             lighting.radianceComplete += (weight * lightColor.rgb) * phase;
-        }
-    }
 
-    return lighting;
-}
+            // CUSTOM: Rainbow implementation
+            // voxel lighting
+            cosTheta = 1 - dot(L, ray.centerDirWS);
+            phase    = CornetteShanksPhasePartVarying(anisotropy, 1 - cosTheta);
 
-// CUSTOM: Rainbow function
-VoxelLighting EvaluateVoxelLightingDirectionalReflection(LightLoopContext context, uint featureFlags, PositionInputs posInput, float3 centerWS,
-                                                         JitteredRay ray, float t0, float t1, float dt, float rndVal, float extinction, float anisotropy)
-{
-    VoxelLighting lighting;
-    ZERO_INITIALIZE(VoxelLighting, lighting);
-
-    BuiltinData unused; // Unused for now, so define once
-    ZERO_INITIALIZE(BuiltinData, unused);
-
-    const float NdotL = 1;
-
-    float tOffset, weight;
-    ImportanceSampleHomogeneousMedium(rndVal, extinction, dt, tOffset, weight);
-
-    float t = t0 + tOffset;
-    posInput.positionWS = ray.originWS + t * ray.jitterDirWS;
-
-    // Load shadows
-    context.shadowValue = 1.0;
-    if (_DirectionalShadowIndex >= 0)
-    {
-        DirectionalLightData light = _DirectionalLightDatas[_DirectionalShadowIndex];
-
-        // Prep the light so that it works with non-volumetrics-aware code.
-        light.contactShadowMask  = 0;
-        light.shadowDimmer       = light.volumetricShadowDimmer;
-
-        float3 L = -light.forward;
-
-        // Is it worth sampling the shadow map?
-        if ((light.volumetricLightDimmer > 0) && (light.volumetricShadowDimmer > 0))
-        {
-            // Pass the light direction as the normal to avoid issues with shadow biasing code.
-            // TODO: does it make sense?
-            float3 shadowN = L;
-
-            context.shadowValue = GetDirectionalShadowAttenuation(context.shadowContext,
-                                                                  posInput.positionSS, posInput.positionWS, shadowN,
-                                                                  light.shadowIndex, L);
-        }
-    }
-
-    for (uint i = 0; i < _DirectionalLightCount; ++i)
-    {
-        DirectionalLightData light = _DirectionalLightDatas[i];
-
-        // Prep the light so that it works with non-volumetrics-aware code.
-        light.contactShadowMask  = 0;
-        light.shadowDimmer       = light.volumetricShadowDimmer;
-
-        // Is it worth evaluating the light?
-        float3 color; float attenuation;
-        if (light.volumetricLightDimmer > 0)
-        {
-            // Antisolar ray
-            float3 L = -light.forward;
-
-            float4 lightColor = EvaluateLight_Directional(context, posInput, light);
-            // The volumetric light dimmer, unlike the regular light dimmer, is not pre-multiplied.
-            lightColor.a *= light.volumetricLightDimmer;
-            lightColor.rgb *= lightColor.a; // Composite
-
-            // Pass the light direction as the normal to avoid issues with shadow biasing code.
-            // TODO: does it make sense?
-            float3 shadowN = -L;
-
-            // This code works for both surface reflection and thin object transmission.
-            float shadow = EvaluateShadow_Directional(context, posInput, light, unused, shadowN);
-            lightColor.rgb *= ComputeShadowColor(shadow, light.shadowTint, light.penumbraTint);
-
-            float cosTheta = 1 - dot(-L, ray.centerDirWS);
-            float phase    = CornetteShanksPhasePartVarying(anisotropy, 1 - cosTheta);
-
-            // Rainbow filtering
+            // angles
             float minAngle = _RainbowParams.x;
             float maxAngle = _RainbowParams.y;
 
+            // angle filtering
             lightColor.rgb *= step(minAngle, cosTheta);
             lightColor.rgb *= step(cosTheta, maxAngle);
 
+            // color filtering
             float rainbowCarryAmount = (cosTheta - minAngle) * (1 / (maxAngle - minAngle));
             lightColor.rgb *= float3(smoothstep(0.6666-0.3333, 0.6666+0.3333, rainbowCarryAmount), 1, 1);
             lightColor.rgb *= float3(1, smoothstep(0.3333-0.3333, 0.3333+0.3333, rainbowCarryAmount) * (1 - smoothstep(0.6666-0.3333, 0.6666+0.3333, rainbowCarryAmount)), 1);
             lightColor.rgb *= float3(1, 1, 1 - smoothstep(0.3333-0.3333, 0.3333+0.3333, rainbowCarryAmount));
 
-            // Depth
-            //float2 pos = posInput.positionSS;
-            //pos = pos * 8; // resolution
-            //float depth = LoadCameraDepth(pos);
-            //float linearEyeDepth = LinearEyeDepth(depth, _ZBufferParams);
-            //float depthFilter = step(_RainbowParams.z, linearEyeDepth);
-            float depthFilter = 1.0;
-
-            // Compute the amount of in-scattered radiance.
-            // Note: the 'weight' accounts for transmittance from 't0' to 't'.
-            lighting.radianceNoPhase += (weight * lightColor.rgb) * depthFilter * 3 * _RainbowParams.w;
-            lighting.radianceComplete += (weight * lightColor.rgb) * phase * depthFilter * 3 * _RainbowParams.w;
+            lighting.radianceNoPhase += (weight * lightColor.rgb) * 3 * _RainbowParams.w;
+            lighting.radianceComplete += (weight * lightColor.rgb) * phase * 3 * _RainbowParams.w;
         }
     }
 
@@ -661,18 +579,6 @@ void FillVolumetricLightingBuffer(LightLoopContext context, uint featureFlags,
         if (featureFlags & LIGHTFEATUREFLAGS_DIRECTIONAL)
         {
             VoxelLighting lighting = EvaluateVoxelLightingDirectional(context, featureFlags, posInput,
-                                                                      centerWS, ray, t0, t1, dt, rndVal,
-                                                                      extinction, anisotropy);
-
-            aggregateLighting.radianceNoPhase  += lighting.radianceNoPhase;
-            aggregateLighting.radianceComplete += lighting.radianceComplete;
-
-            // CUSTOM: My comment below
-            // NOTE/TODO: I need to modify this function to add light reflection support
-            // I can also make the same changes in EvaluateVoxelLightingLocal to add
-            // rainbows to all lights, but I don't think that is really useful
-            // NOTE: todo in progress
-            lighting = EvaluateVoxelLightingDirectionalReflection(context, featureFlags, posInput,
                                                                       centerWS, ray, t0, t1, dt, rndVal,
                                                                       extinction, anisotropy);
 
