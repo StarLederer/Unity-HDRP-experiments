@@ -59,7 +59,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 8104a2883ad5d3b4c87b5e82c880cec9, type: 2}
+  - {fileID: 2100000, guid: f1aaa0f2df503af42b58162a5f46f487, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -92,7 +92,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: dbc7ef1e8ffb7084595509ed02f8e029, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lodCascades: {x: 16, y: 30, z: 64, w: 0}
+  lodCascades: {x: 16, y: 32, z: 64, w: 0}
   grassSize: {x: 1, y: 0.7}
   grassAmount: 3000
   slopeThreshold: 25

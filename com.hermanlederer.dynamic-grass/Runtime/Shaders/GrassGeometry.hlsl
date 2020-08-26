@@ -51,7 +51,7 @@ PackedVaryingsType VertexOutput(
     half4 color = half4(bary_coord.xy, emission, rnd);
 
     // Wind animation
-    float3 positionWithWind = position;
+    float3 positionWithWind = position;// + float3(0.4, 0.1, 0.4) * (random(position) * 2 - 1);
     positionWithWind += float3(uv0.y, uv0.y, uv0.y) * float3(WindStrengthXZ, WindStrengthY, WindStrengthXZ) * GetWind(position * WindScale + _TimeParameters.xx * WindSpeed);
 
     return PackVertexData(source, positionWithWind, prev_position, normal, uv0, color);
@@ -198,8 +198,8 @@ void Lod2Geometry(
     float3 grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR; // B ottom L eft R ight T op
     float3 faceNormal = normal;
 
-    float3 viewDir = mul((float3x3) _ViewMatrix, float3(1, 0, 0))  * float3(1, 0, 1);
-    float3 grassDirection = viewDir;
+    float rnd = random(previousVPos) * 6.28318530718; // Pi*2
+    float3 grassDirection = float3(sin(rnd), 0, cos(rnd));
     grassVPosBL = currentVPos - grassDirection * scale;
     grassVPosTL = currentVPosUp - grassDirection * scale;
     grassVPosTR = currentVPosUp + grassDirection * scale;
@@ -222,6 +222,8 @@ void GrassGeometry(
     // Input data
     AttributesMesh inputVertex = ConvertToAttributesMesh(input[0]);
 
+    float3 currentVPos = inputVertex.positionOS;
+
     #if SHADERPASS == SHADERPASS_MOTION_VECTORS
         bool hasDeformation = unity_MotionVectorsParams.x > 0.0;
         float3 previousVPos = hasDeformation ? input[0].previousPositionOS : inputVertex.positionOS;
@@ -236,19 +238,17 @@ void GrassGeometry(
     #endif
 
     // Grass scale calculation with distance fading
-    float3 currentVPos = inputVertex.positionOS;
     float posDiffX = currentVPos.x - _LodCenter.x;
     float posDiffY = currentVPos.y - _LodCenter.y;
     float posDiffZ = currentVPos.z - _LodCenter.z;
     float distance = sqrt(posDiffX*posDiffX + posDiffY*posDiffY + posDiffZ*posDiffZ);
-    distance += random(currentVPos) * 8 - 4;
+    //distance += random(currentVPos) * 8 - 4;
 
-
-    float distanceFade = distance / Lod2Radius;
-    currentVPos -= normal * _GrassSize.y * pow(distanceFade, 2);
+    //float distanceFade = distance / Lod2Radius;
+    //currentVPos -= normal * _GrassSize.y * pow(distanceFade, 2);
 
     // Grass growth direction
-    //float3 currentVPosUp = currentVPos + normal;                                  // surface normal
+    //float3 currentVPosUp = currentVPos + normal;                                           // surface normal
     float3 currentVPosUp = currentVPos + (normal + float3(0, _GrassSize.y*2, 0)) / 2;        // average
     //float3 currentVPosUp = currentVPos + float3(0, _GrassSize.y*2, 0);                     // up
 
