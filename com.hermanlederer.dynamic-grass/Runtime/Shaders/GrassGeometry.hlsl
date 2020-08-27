@@ -11,7 +11,7 @@ float4 _WindParams; // x xz strength, y y strength, z speed, w scale
 //
 //
 // Defines
-//#define USE_CORRECT_GRASS_NORMALS // Grass looks better with normals just facing up. If you enable this don't forget to change normal mode in material settings
+#define USE_CORRECT_GRASS_NORMALS // Grass looks better with normals just facing up. If you enable this don't forget to change normal mode in material settings
 
 #define Lod0Radius       _LodCascades.x
 #define Lod1Radius       _LodCascades.y
@@ -242,10 +242,10 @@ void GrassGeometry(
     float posDiffY = currentVPos.y - _LodCenter.y;
     float posDiffZ = currentVPos.z - _LodCenter.z;
     float distance = sqrt(posDiffX*posDiffX + posDiffY*posDiffY + posDiffZ*posDiffZ);
-    //distance += random(currentVPos) * 8 - 4;
 
-    //float distanceFade = distance / Lod2Radius;
-    //currentVPos -= normal * _GrassSize.y * pow(distanceFade, 2);
+    // Distance fading
+    float distanceFade = distance / Lod2Radius;
+    currentVPos -= normal * _GrassSize.y * pow(distanceFade, 2);
 
     // Grass growth direction
     //float3 currentVPosUp = currentVPos + normal;                                           // surface normal
