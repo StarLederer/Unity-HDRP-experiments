@@ -1,6 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿#if UNITY_EDITOR
+
 using UnityEditor;
 
 namespace DynamicGrass
@@ -12,9 +11,11 @@ namespace DynamicGrass
 		{
 			base.OnInspectorGUI();
 
-			DynamicGrassMeshPopulator populator = (DynamicGrassMeshPopulator) target;
+			DynamicGrassMeshPopulator populator = (DynamicGrassMeshPopulator)target;
 			populator.Populate();
 		}
 	}
 
 }
+
+#endif

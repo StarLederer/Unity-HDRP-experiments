@@ -1,5 +1,5 @@
 ﻿//#define USE_FOV // turned out to harm the performance instead of helping it, may still be useful with static or almost static cameras
-#define DEBUG
+//#define DEBUG
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -43,7 +43,7 @@ namespace DynamicGrass
 		//--------------------------
 		// MonoBehaviour methods
 		//--------------------------
-		void OnEnable()
+		public void OnEnable()
 		{
 			// Populator params
 			var populatorParameters = new DynamicGrassInfinitePopulatorParameters();
@@ -64,9 +64,12 @@ namespace DynamicGrass
 			// Removing all childrend in case some chunks were not removed for whatever reason
 			for (int i = transform.childCount - 1; i >= 0; --i)
 				DestroyImmediate(transform.GetChild(i).gameObject);
+
+			// Calling Update to get grass witout having to move the main camera in editor
+			UpdateChunks();
 		}
 
-		void Update()
+		public void Update()
 		{
 			Camera cam = Camera.main;
 
@@ -78,57 +81,12 @@ namespace DynamicGrass
 
 			if (updateChinks)
 			{
+				UpdateChunks();
+
 				lastCamPos = cam.transform.position;
 #if USE_FOV
 				lastCamRot = cam.transform.rotation;
 #endif
-
-				// Recycling chunks too far from camera
-				for (int i = 0; i < activePopulators.Count; ++i)
-				{
-					var populator = activePopulators[i];
-					var flatPopPosition = FlattenPosition(populator.transform.position);
-
-					if (!IsChunkVisible(cam, flatPopPosition, gridSize+1, fieldOfView + 10))
-					{
-						var populatorChunkPosition = WorldToChunkPosition(flatPopPosition);
-
-#if DEBUG
-						Debug.DrawRay(populator.transform.position, new Vector3(chunkSize.x / 2, 0, chunkSize.x / 2), Color.red, 0.3f);
-						Debug.DrawRay(populator.transform.position, new Vector3(-chunkSize.x / 2, 0, -chunkSize.x / 2), Color.red, 0.3f);
-#endif
-
-						m_Pool.Recycle(populator);
-						activePopulators.RemoveAt(i);
-						populatorMap.Remove(populatorChunkPosition);
-					}
-				}
-
-				// Filling in missing chunks around camera
-				for (int x = -gridSize; x <= gridSize; ++x)
-				{
-					for (int z = -gridSize; z <= gridSize; ++z)
-					{
-						var camPosition = FlattenPosition(cam.transform.position);
-						var popChunkPosition = WorldToChunkPosition(camPosition) + new Vector2Int(x, z);
-						var popPosition = ChunkToWorldPosition(popChunkPosition);
-
-						if (!IsChunkVisible(cam, popPosition, gridSize, fieldOfView)) continue;
-						if (populatorMap.ContainsKey(popChunkPosition)) continue;
-						
-						var populator = m_Pool.Get();
-						populator.transform.position = ExtrudePosition(popPosition);
-						activePopulators.Add(populator);
-						populatorMap.Add(popChunkPosition, populator);
-
-#if DEBUG
-						Debug.DrawRay(populator.transform.position, new Vector3(chunkSize.x / 2, 0, chunkSize.x / 2), Color.green, 0.3f);
-						Debug.DrawRay(populator.transform.position, new Vector3(-chunkSize.x / 2, 0, -chunkSize.x / 2), Color.green, 0.3f);
-#endif
-
-						populator.Populate();
-					}
-				}
 			}
 		}
 
@@ -170,6 +128,58 @@ namespace DynamicGrass
 #endif
 
 			return true;
+		}
+
+		public void UpdateChunks()
+		{
+			Camera cam = Camera.main;
+
+			// Recycling chunks too far from camera
+			for (int i = 0; i < activePopulators.Count; ++i)
+			{
+				var populator = activePopulators[i];
+				var flatPopPosition = FlattenPosition(populator.transform.position);
+
+				if (!IsChunkVisible(cam, flatPopPosition, gridSize + 1, fieldOfView + 10))
+				{
+					var populatorChunkPosition = WorldToChunkPosition(flatPopPosition);
+
+#if DEBUG
+					Debug.DrawRay(populator.transform.position, new Vector3(chunkSize.x / 2, 0, chunkSize.x / 2), Color.red, 0.3f);
+					Debug.DrawRay(populator.transform.position, new Vector3(-chunkSize.x / 2, 0, -chunkSize.x / 2), Color.red, 0.3f);
+#endif
+
+					m_Pool.Recycle(populator);
+					activePopulators.RemoveAt(i);
+					populatorMap.Remove(populatorChunkPosition);
+				}
+			}
+
+			// Filling in missing chunks around camera
+			for (int x = -gridSize; x <= gridSize; ++x)
+			{
+				for (int z = -gridSize; z <= gridSize; ++z)
+				{
+					var camPosition = FlattenPosition(cam.transform.position);
+					var popChunkPosition = WorldToChunkPosition(camPosition) + new Vector2Int(x, z);
+					var popPosition = ChunkToWorldPosition(popChunkPosition);
+
+					if (!IsChunkVisible(cam, popPosition, gridSize, fieldOfView)) continue;
+					if (populatorMap.ContainsKey(popChunkPosition)) continue;
+
+					var populator = m_Pool.Get();
+					populator.transform.position = ExtrudePosition(popPosition);
+					activePopulators.Add(populator);
+					populatorMap.Add(popChunkPosition, populator);
+
+#if DEBUG
+					Debug.DrawRay(populator.transform.position, new Vector3(chunkSize.x / 2, 0, chunkSize.x / 2), Color.green, 0.3f);
+					Debug.DrawRay(populator.transform.position, new Vector3(-chunkSize.x / 2, 0, -chunkSize.x / 2), Color.green, 0.3f);
+#endif
+
+					populator.Populate();
+				}
+			}
 		}
 
 		//--------------------------
