@@ -157,7 +157,7 @@ void Lod1Geometry(
     float3 grassDirection;
 
     // X plane
-    grassDirection = float3(1, 0, 0);
+    grassDirection = float3(0.7071067811865475, 0, 0.7071067811865475);
     grassDirection = cross(grassDirection, normal);
 
     grassVPosBL = currentVPos - grassDirection * scale;
@@ -170,7 +170,7 @@ void Lod1Geometry(
     GenerateGrassQuad(inputVertex, grassVPosBL, grassVPosTL, grassVPosTR, grassVPosBR, previousVPos, faceNormal, outStream);
 
     // Z plane
-    grassDirection = float3(0, 0, 1);
+    grassDirection = float3(-0.7071067811865475, 0, 0.7071067811865475);
     grassDirection = cross(grassDirection, normal);
 
     grassVPosBL = currentVPos - grassDirection * scale;
