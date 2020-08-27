@@ -1,4 +1,5 @@
 ﻿//#define USE_FOV // turned out to harm the performance instead of helping it, may still be useful with static or almost static cameras
+#define DEBUG
 
 using System.Collections.Generic;
 using UnityEngine;
@@ -10,10 +11,23 @@ namespace DynamicGrass
 	{
 		//
 		// Editor varaibles
-		[SerializeField] private int gridSize = 5;
-		[SerializeField] private int cellSize = 8;
+		[Header("Chunk grid")]
+		[SerializeField] private int gridSize = 3;
+		[SerializeField] private Vector2Int chunkSize = Vector2Int.one;
 		[SerializeField] private float fieldOfView = 90;
-		[SerializeField] private GameObject populatorPrefab = null;
+		[SerializeField] private LayerMask layerMask = 0;
+
+		[Header("Grass")]
+		[SerializeField] private Material material = null;
+		[SerializeField] private Vector4 lodCascades = Vector4.zero;
+		[SerializeField] private Vector2 grassSize = Vector2.one;
+		[SerializeField] [Range(0, 65536)] private int grassAmount = 0;
+		[SerializeField] [Range(0, 180)] private float slopeThreshold = 45;
+
+		[Header("Wind")]
+		[SerializeField] private Vector2 windStrength = Vector2.zero;
+		[SerializeField] private float windSpeed = 0f;
+		[SerializeField] private float windScale = 1f;
 
 		//
 		// Private variables
@@ -31,10 +45,23 @@ namespace DynamicGrass
 		//--------------------------
 		void OnEnable()
 		{
-			m_Pool = new ChunkPool(transform, populatorPrefab);
+			// Populator params
+			var populatorParameters = new DynamicGrassInfinitePopulatorParameters();
+			populatorParameters.chunkSize = chunkSize;
+			populatorParameters.layerMask = layerMask;
+			populatorParameters.material = material;
+			populatorParameters.lodCascades = lodCascades;
+			populatorParameters.grassSize = grassSize;
+			populatorParameters.grassAmount = grassAmount;
+			populatorParameters.slopeThreshold = slopeThreshold;
+			populatorParameters.windParams = new Vector4(windStrength.x, windStrength.y, windSpeed, windScale);
+
+			// Initialization
+			m_Pool = new ChunkPool(transform, populatorParameters);
 			activePopulators = new List<DynamicGrassInfinitePopulator>();
 			populatorMap = new Dictionary<Vector2Int, DynamicGrassInfinitePopulator>();
 
+			// Removing all childrend in case some chunks were not removed for whatever reason
 			for (int i = transform.childCount - 1; i >= 0; --i)
 				DestroyImmediate(transform.GetChild(i).gameObject);
 		}
@@ -66,8 +93,10 @@ namespace DynamicGrass
 					{
 						var populatorChunkPosition = WorldToChunkPosition(flatPopPosition);
 
-						Debug.DrawRay(populator.transform.position, new Vector3(cellSize / 2, 0, cellSize / 2), Color.red, 0.3f);
-						Debug.DrawRay(populator.transform.position, new Vector3(-cellSize / 2, 0, -cellSize / 2), Color.red, 0.3f);
+#if DEBUG
+						Debug.DrawRay(populator.transform.position, new Vector3(chunkSize.x / 2, 0, chunkSize.x / 2), Color.red, 0.3f);
+						Debug.DrawRay(populator.transform.position, new Vector3(-chunkSize.x / 2, 0, -chunkSize.x / 2), Color.red, 0.3f);
+#endif
 
 						m_Pool.Recycle(populator);
 						activePopulators.RemoveAt(i);
@@ -92,8 +121,10 @@ namespace DynamicGrass
 						activePopulators.Add(populator);
 						populatorMap.Add(popChunkPosition, populator);
 
-						Debug.DrawRay(populator.transform.position, new Vector3(cellSize/2, 0, cellSize/2), Color.green, 0.3f);
-						Debug.DrawRay(populator.transform.position, new Vector3(-cellSize/2, 0, -cellSize/2), Color.green, 0.3f);
+#if DEBUG
+						Debug.DrawRay(populator.transform.position, new Vector3(chunkSize.x / 2, 0, chunkSize.x / 2), Color.green, 0.3f);
+						Debug.DrawRay(populator.transform.position, new Vector3(-chunkSize.x / 2, 0, -chunkSize.x / 2), Color.green, 0.3f);
+#endif
 
 						populator.Populate();
 					}
@@ -116,12 +147,12 @@ namespace DynamicGrass
 
 		private Vector2Int WorldToChunkPosition(Vector2 worldPos)
 		{
-			return new Vector2Int(Mathf.RoundToInt(worldPos.x / cellSize), Mathf.RoundToInt(worldPos.y / cellSize));
+			return new Vector2Int(Mathf.RoundToInt(worldPos.x / chunkSize.x), Mathf.RoundToInt(worldPos.y / chunkSize.x));
 		}
 
 		private Vector2 ChunkToWorldPosition(Vector2Int worldPos)
 		{
-			return worldPos * cellSize;
+			return worldPos * chunkSize.x;
 		}
 
 		private bool IsChunkVisible(Camera cam, Vector2 populatorPos, int gridSize, float fieldOfView)
@@ -132,7 +163,7 @@ namespace DynamicGrass
 			var popVec = ExtrudePosition(populatorPos) - cam.transform.position;
 #endif
 
-			if (Vector2.Distance(camPosition, populatorPos) > gridSize * cellSize) return false;
+			if (Vector2.Distance(camPosition, populatorPos) > gridSize * chunkSize.x) return false;
 #if USE_FOV
 			if (Vector2.Distance(camPosition, populatorPos) < cellSize) return true;
 			if (Vector3.Angle(camVec, popVec) > fieldOfView) return false;
@@ -147,14 +178,14 @@ namespace DynamicGrass
 		private class ChunkPool
 		{
 			private Transform m_parent;
-			private GameObject m_populatorPrefab;
+			private DynamicGrassInfinitePopulatorParameters m_populatorParams;
 
 			private Stack<DynamicGrassInfinitePopulator> m_Stack;
 
-			public ChunkPool(Transform parent, GameObject populatorPrefab)
+			public ChunkPool(Transform parent, DynamicGrassInfinitePopulatorParameters populatorParams)
 			{
 				m_parent = parent;
-				m_populatorPrefab = populatorPrefab;
+				m_populatorParams = populatorParams;
 
 				m_Stack = new Stack<DynamicGrassInfinitePopulator>();
 			}
@@ -176,7 +207,10 @@ namespace DynamicGrass
 					return populator;
 				}
 
-				var newPopulator = Instantiate(m_populatorPrefab, m_parent).GetComponent<DynamicGrassInfinitePopulator>();
+				var newPopulator = new GameObject().AddComponent<DynamicGrassInfinitePopulator>();
+				newPopulator.transform.parent = m_parent;
+				newPopulator.parameters = m_populatorParams;
+				newPopulator.SetMaterial(m_populatorParams.material);
 				return newPopulator;
 			}
 
