@@ -45,6 +45,7 @@ CBUFFER_START(cb0)
     float4 _BloomTint;
     float4 _BloomDirtScaleOffset;
     float4 _BloomBicubicParams;
+    float4 _LMSRParams;
     float4 _DebugFlags;
 CBUFFER_END
 
@@ -109,8 +110,95 @@ float2 DistortUV(float2 uv)
     return uv;
 }
 
-#define GROUP_SIZE 8
+float3 xyz2lab( float3 c ) {
+    float3 n = c / float3(95.047, 100, 108.883);
+    float3 v;
+    v.x = ( n.x > 0.008856 ) ? pow( n.x, 1.0 / 3.0 ) : ( 7.787 * n.x ) + ( 16.0 / 116.0 );
+    v.y = ( n.y > 0.008856 ) ? pow( n.y, 1.0 / 3.0 ) : ( 7.787 * n.y ) + ( 16.0 / 116.0 );
+    v.z = ( n.z > 0.008856 ) ? pow( n.z, 1.0 / 3.0 ) : ( 7.787 * n.z ) + ( 16.0 / 116.0 );
+    return float3(( 116.0 * v.y ) - 16.0, 500.0 * ( v.x - v.y ), 200.0 * ( v.y - v.z ));
+}
 
+float3 lab2xyz( float3 c ) {
+    float fy = ( c.x + 16.0 ) / 116.0;
+    float fx = c.y / 500.0 + fy;
+    float fz = fy - c.z / 200.0;
+    return float3(
+         95.047 * (( fx > 0.206897 ) ? fx * fx * fx : ( fx - 16.0 / 116.0 ) / 7.787),
+        100.000 * (( fy > 0.206897 ) ? fy * fy * fy : ( fy - 16.0 / 116.0 ) / 7.787),
+        108.883 * (( fz > 0.206897 ) ? fz * fz * fz : ( fz - 16.0 / 116.0 ) / 7.787)
+    );
+}
+
+float3 change_luminance(float3 c_in, float l_out)
+{
+    float l_in = Luminance(c_in);
+    return c_in * (l_out / l_in);
+}
+
+float3 uncharted2_tonemap_partial(float3 x)
+{
+    float A = 0.15f;
+    float B = 0.50f;
+    float C = 0.10f;
+    float D = 0.20f;
+    float E = 0.02f;
+    float F = 0.30f;
+    return ((x*(A*x+C*B)+D*E)/(x*(A*x+B)+D*F))-E/F;
+}
+
+float3 uncharted2_filmic(float3 v)
+{
+    float exposure_bias = 2.0f;
+    float3 curr = uncharted2_tonemap_partial(v * exposure_bias);
+
+    float3 W = 11.2f.xxx;
+    float3 white_scale = 1.0f.xxx / uncharted2_tonemap_partial(W);
+    return curr * white_scale;
+}
+
+// The code in this file was originally written by Stephen Hill (@self_shadow), who deserves all
+// credit for coming up with this fit and implementing it. Buy him a beer next time you see him. :)
+
+// sRGB => XYZ => D65_2_D60 => AP1 => RRT_SAT
+static const float3x3 ACESInputMat =
+{
+    {0.59719, 0.35458, 0.04823},
+    {0.07600, 0.90834, 0.01566},
+    {0.02840, 0.13383, 0.83777}
+};
+
+// ODT_SAT => XYZ => D60_2_D65 => sRGB
+static const float3x3 ACESOutputMat =
+{
+    { 1.60475, -0.53108, -0.07367},
+    {-0.10208,  1.10813, -0.00605},
+    {-0.00327, -0.07276,  1.07602}
+};
+
+float3 RRTAndODTFit(float3 v)
+{
+    float3 a = v * (v + 0.0245786f) - 0.000090537f;
+    float3 b = v * (0.983729f * v + 0.4329510f) + 0.238081f;
+    return a / b;
+}
+
+float3 ACESFitted(float3 color)
+{
+    color = mul(ACESInputMat, color);
+
+    // Apply RRT and ODT
+    color = RRTAndODTFit(color);
+
+    color = mul(ACESOutputMat, color);
+
+    // Clamp to [0, 1]
+    color = saturate(color);
+
+    return color;
+}
+
+#define GROUP_SIZE 8
 [numthreads(GROUP_SIZE, GROUP_SIZE, 1)]
 void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
@@ -208,25 +296,117 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
         }
     }
 
+
+    // CUSTOM: Added this effect
+
+    // no mans sky colors
+    //float4 colorLMSR = LinearToLMSR(color);
+    //color = LMSToLinear(colorLMSR.yzz);
+    //color = color.yzz;
+
+
+    // Dark hue shift lerp
+    // float3 nightColor = RgbToHsv(color);
+    // nightColor.x = RotateHue(nightColor.x, 1, _LMSRParams.z);
+    // nightColor = HsvToRgb(nightColor);
+
+    // float lum = Luminance(color);
+    // float interp = smoothstep(_LMSRParams.x, _LMSRParams.y, lum);
+
+    // color = lerp(lerp(color, nightColor, _LMSRParams.w), color, interp);
+
+
+    // Dark monochrome hue shift lerp (looks best, but still not good enough, so just scrap that)
+    //float3 nightColor = color.r * 0.1 + color.g * 0.5 + color.b * 0.4;
+    //nightColor *= float3(0.1, 0.3, 0.6) * 3;
+
+    //float lum = Luminance(color);
+    //float interp = smoothstep(_LMSRParams.x, _LMSRParams.y, lum);
+    
+    //color = lerp(lerp(color, nightColor, _LMSRParams.w), color, interp);
+
+
+    // Dark hue shift luma-shift (looks horrendous)
+    // float lum = Luminance(color);
+    // float interp = smoothstep(_LMSRParams.x, _LMSRParams.y, lum);
+    
+    // color = RgbToHsv(color);
+    // color.x = RotateHue(color.x, 1, interp);
+    // color = HsvToRgb(color);
+
+
+    // CUSTOM: My own tonemapping
+    // Tonemap
+    // Reinhard
+    // color = color / (1.0f + color);
+
+
+    // Extended reinhard
+    //float max_white = _LMSRParams.z;
+    //float3 numerator = color * (1.0f + (color / float3(max_white * max_white,max_white * max_white,max_white * max_white)));
+    //color = numerator / (1.0f + color);
+
+
+    // Extended reinhard (luminance)
+    // float max_white_l = _LMSRParams.z;
+    // float l_old = Luminance(color);
+    // float numerator = l_old * (1.0f + (l_old / (max_white_l * max_white_l)));
+    // float l_new = numerator / (1.0f + l_old);
+    // color = change_luminance(color, l_new);
+
+
+    // Reinhard-Jodie
+    //float l = Luminance(color);
+    //float3 tv = color / (1.0f + color);
+    //color = lerp(color / (1.0f + l), tv, tv);
+
+
+    // Uncharted 2
+    //color = uncharted2_filmic(color);
+
+
+    // Unity ACES
+    color = AcesTonemap(unity_to_ACES(color));
+
+
+    // Stephen Hill ACES
+    //color = ACESFitted(color);
+
+
+    // Krzysztof Narkowicz ACES
+    // {
+    //     float a = 2.51f;
+    //     float b = 0.03f;
+    //     float c = 2.43f;
+    //     float d = 0.59f;
+    //     float e = 0.14f;
+    //     color = saturate((color*(a*color+b))/(color*(c*color+d)+e));
+    // }
+    
+
+    // LOG Color
+    //color = LinearToLogC(color);
+
+    // CUSTOM: Disabeled all of that
     // Grading, tonemapping
-    // The branch is only used for frame settings & exr log export - else grading is always enabled
-    UNITY_BRANCH
-    if (OutputLogEnabled)
-    {
-        // Output in log space for debug & exr export (external grading)
-        color = saturate(LinearToLogC(color));
-    }
-    else if (GradingEnabled)
-    {
-        // Artist request to fine tune exposure in post without affecting bloom, dof etc
-        color *= PostExposure;
+    // The branch is only used for frame settings & exr log export - otherwise grading is always enabled
+    // UNITY_BRANCH
+    // if (OutputLogEnabled)
+    // {
+    //     // Output in log space for debug & exr export (external grading)
+    //     color = saturate(LinearToLogC(color));
+    // }
+    // else if (GradingEnabled)
+    // {
+    //     // Artist request to fine tune exposure in post without affecting bloom, dof etc
+    //     color *= PostExposure;
 
-        // Move from linear to LogC
-        float3 colorLutSpace = saturate(LinearToLogC(color));
+    //     // Move from linear to LogC
+    //     float3 colorLutSpace = saturate(LinearToLogC(color));
 
-        // Color lookup in the LogC lut
-        color = ApplyLut3D(TEXTURE3D_ARGS(_LogLut3D, sampler_LogLut3D), colorLutSpace, _LogLut3D_Params.xy);
-    }
+    //     // Color lookup in the LogC lut
+    //     color = ApplyLut3D(TEXTURE3D_ARGS(_LogLut3D, sampler_LogLut3D), colorLutSpace, _LogLut3D_Params.xy);
+    // }
 
     // Done
     _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = color;

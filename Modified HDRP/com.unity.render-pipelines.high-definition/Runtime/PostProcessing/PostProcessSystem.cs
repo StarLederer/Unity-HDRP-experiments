@@ -72,6 +72,7 @@ namespace UnityEngine.Rendering.HighDefinition
 		LensDistortion m_LensDistortion;
 		Vignette m_Vignette;
 		Tonemapping m_Tonemapping;
+		LMSR m_LMSR;
 		WhiteBalance m_WhiteBalance;
 		ColorAdjustments m_ColorAdjustments;
 		ChannelMixer m_ChannelMixer;
@@ -301,6 +302,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			m_LensDistortion = stack.GetComponent<LensDistortion>();
 			m_Vignette = stack.GetComponent<Vignette>();
 			m_Tonemapping = stack.GetComponent<Tonemapping>();
+			m_LMSR = stack.GetComponent<LMSR>();
 			m_WhiteBalance = stack.GetComponent<WhiteBalance>();
 			m_ColorAdjustments = stack.GetComponent<ColorAdjustments>();
 			m_ChannelMixer = stack.GetComponent<ChannelMixer>();
@@ -557,6 +559,9 @@ namespace UnityEngine.Rendering.HighDefinition
 							cmd.SetComputeVectorParam(cs, HDShaderIDs._BloomHaloParams, Vector4.zero);
 						}
 
+						// LMSR
+						cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_LMSRParams"), new Vector4(m_LMSR.edge1.value, m_LMSR.edge2.value, m_LMSR.hueShift.value, m_LMSR.intensity.value));
+
 						// Build the color grading lut
 						using (new ProfilingSample(cmd, "Color Grading LUT Builder", CustomSamplerId.ColorGradingLUTBuilder.GetSampler()))
 						{
@@ -725,11 +730,13 @@ namespace UnityEngine.Rendering.HighDefinition
 				kernel = cs.FindKernel("KFixedExposure");
 				cmd.SetComputeVectorParam(cs, HDShaderIDs._ExposureParams, new Vector4(m_Exposure.fixedExposure.value, 0f, 0f, 0f));
 			}
-			else if (m_Exposure.mode == ExposureMode.UsePhysicalCamera)
-			{
-				kernel = cs.FindKernel("KManualCameraExposure");
-				cmd.SetComputeVectorParam(cs, HDShaderIDs._ExposureParams, new Vector4(m_Exposure.compensation.value, m_PhysicalCamera.aperture, m_PhysicalCamera.shutterSpeed, m_PhysicalCamera.iso));
-			}
+			// CUSTOM: We are trying to emulate human eye, so there is no need
+			// to use Physical camera parameters
+			//else if (m_Exposure.mode == ExposureMode.UsePhysicalCamera)
+			//{
+			//	kernel = cs.FindKernel("KManualCameraExposure");
+			//	cmd.SetComputeVectorParam(cs, HDShaderIDs._ExposureParams, new Vector4(m_Exposure.compensation.value, m_PhysicalCamera.aperture, m_PhysicalCamera.shutterSpeed, m_PhysicalCamera.iso));
+			//}
 
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, prevExposure);
 			cmd.DispatchCompute(cs, kernel, 1, 1, 1);

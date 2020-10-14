@@ -99,7 +99,11 @@ float AdaptExposure(float exposure)
 [numthreads(1,1,1)]
 void KFixedExposure(uint2 dispatchThreadId : SV_DispatchThreadID)
 {
-    _OutputTexture[dispatchThreadId] = float2(ConvertEV100ToExposure(ParamEV100), ParamEV100);
+	// CUSTOM: replaced the following line with everything that goes after it
+    //_OutputTexture[dispatchThreadId] = float2(ConvertEV100ToExposure(ParamEV100), ParamEV100); // <- this one
+
+	// NOTE: 
+    _OutputTexture[dispatchThreadId] = float2(0.001, ParamEV100);
 }
 
 //
