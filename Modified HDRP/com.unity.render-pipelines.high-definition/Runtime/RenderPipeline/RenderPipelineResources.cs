@@ -232,6 +232,8 @@ namespace UnityEngine.Rendering.HighDefinition
             public ComputeShader bloomHalo;
             [Reload("Runtime/PostProcessing/Shaders/BloomUpsample.compute")]
             public ComputeShader bloomUpsampleCS;
+            [Reload("Runtime/PostProcessing/Shaders/Afterimage.compute")]
+            public ComputeShader AfterimageCS;
             [Reload("Runtime/PostProcessing/Shaders/FXAA.compute")]
             public ComputeShader FXAACS;
             [Reload("Runtime/PostProcessing/Shaders/FinalPass.shader")]

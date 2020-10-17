@@ -62,6 +62,10 @@ namespace UnityEngine.Rendering.HighDefinition
 		RTHandle m_InternalLogLut; // ARGBHalf
 		readonly HableCurve m_HableCurve;
 
+		// CUSTOM
+		// Afterimage data
+		RTHandle m_AfterimageTexure;
+
 		// Prefetched components (updated on every frame)
 		Exposure m_Exposure;
 		DepthOfField m_DepthOfField;
@@ -211,6 +215,13 @@ namespace UnityEngine.Rendering.HighDefinition
 				enableRandomWrite: true, name: "Average Luminance Temp 32"
 			);
 
+			// CUSTOM
+			// Afterimage RT
+			m_AfterimageTexure = RTHandles.Alloc(
+					new Vector2(0.125f, 0.125f), TextureXR.slices, DepthBits.None, colorFormat: k_ColorFormat, dimension: TextureXR.dimension,
+					useMipMap: false, enableRandomWrite: true, useDynamicScale: true, name: "Positive Afterimage"
+				);
+
 			// Used to copy the alpha channel of the color buffer if the format is set to fp16
 			m_KeepAlpha = hdAsset.currentPlatformRenderPipelineSettings.keepAlpha;
 			if (m_KeepAlpha)
@@ -220,6 +231,8 @@ namespace UnityEngine.Rendering.HighDefinition
 					colorFormat: GraphicsFormat.R16_SFloat, enableRandomWrite: true, name: "Alpha Channel Copy"
 				);
 			}
+
+			Debug.Log("Post Process System initialized");
 		}
 
 		public void Cleanup()
@@ -230,6 +243,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			RTHandles.Release(m_TempTexture1024);
 			RTHandles.Release(m_TempTexture32);
 			RTHandles.Release(m_AlphaTexture);
+			RTHandles.Release(m_AfterimageTexure);
 			CoreUtils.Destroy(m_ExposureCurveTexture);
 			CoreUtils.Destroy(m_InternalSpectralLut);
 			RTHandles.Release(m_InternalLogLut);
@@ -243,6 +257,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 			m_EmptyExposureTexture = null;
 			m_TempTexture1024 = null;
+			m_AfterimageTexure = null;
 			m_TempTexture32 = null;
 			m_AlphaTexture = null;
 			m_ExposureCurveTexture = null;
@@ -568,6 +583,12 @@ namespace UnityEngine.Rendering.HighDefinition
 							DoColorGrading(cmd, cs, kernel);
 						}
 
+						// Positive afterimage
+						using (new ProfilingSample(cmd, "Positive Afterimage", CustomSamplerId.CustomPostProcessAfterPP.GetSampler()))
+						{
+							DoPositiveAfterimage(cmd, camera, source, cs, kernel);
+						}
+
 						// Setup the rest of the effects
 						DoLensDistortion(cmd, cs, kernel, featureFlags);
 						DoChromaticAberration(cmd, cs, kernel, featureFlags);
@@ -604,6 +625,12 @@ namespace UnityEngine.Rendering.HighDefinition
 						}
 					}
 				}
+
+				// Update afterimage
+				var afterimageCS = m_Resources.shaders.AfterimageCS;
+				int afterimageKernel = afterimageCS.FindKernel("KMainDownsample");
+				//Assert.IsNotNull(source);
+				UpdatePositiveAfterimage(cmd, camera, source, afterimageCS, afterimageKernel);
 
 				if (dynResHandler.DynamicResolutionEnabled() &&     // Dynamic resolution is on.
 					camera.antialiasing == AntialiasingMode.FastApproximateAntialiasing &&
@@ -2280,6 +2307,40 @@ namespace UnityEngine.Rendering.HighDefinition
 
 		#endregion
 
+		// CUSTOM
+		#region Positive Afterimage
+
+		void DoPositiveAfterimage(CommandBuffer cmd, HDCamera camera, RTHandle source, ComputeShader uberCS, int uberKernel)
+		{
+			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_AfterimageParams"), new Vector4(1f, 0f, 0f, 0f));
+			cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_AfterimageTexture"), m_AfterimageTexure);
+			//Debug.Log(m_AfterimageTexure.GetScaledSize(m_AfterimageTexure.referenceSize));
+		}
+
+		void UpdatePositiveAfterimage(CommandBuffer cmd, HDCamera camera, RTHandle source, ComputeShader cs, int kernel)
+		{
+			var size = new Vector2Int(m_AfterimageTexure.rt.width, m_AfterimageTexure.rt.height);
+
+			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, source);
+			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, m_AfterimageTexure);
+			cmd.SetComputeVectorParam(cs, HDShaderIDs._TexelSize, new Vector4(size.x, size.y, 1f / size.x, 1f / size.y));
+
+			int w = size.x;
+			int h = size.y;
+
+			if (w < source.rt.width && w % 8 < k_RTGuardBandSize)
+				w += k_RTGuardBandSize;
+			if (h < source.rt.height && h % 8 < k_RTGuardBandSize)
+				h += k_RTGuardBandSize;
+
+			//Debug.Log("width: " + w);
+			//Debug.Log("height: " + h);
+
+			cmd.DispatchCompute(cs, kernel, (w + 7) / 8, (h + 7) / 8, camera.viewCount);
+		}
+
+		#endregion
+
 		#region FXAA
 
 		void DoFXAA(CommandBuffer cmd, HDCamera camera, RTHandle source, RTHandle destination)
@@ -2599,7 +2660,7 @@ namespace UnityEngine.Rendering.HighDefinition
 					scaleFactor, TextureXR.slices, DepthBits.None, colorFormat: format, dimension: TextureXR.dimension,
 					useMipMap: mipmap, enableRandomWrite: true, useDynamicScale: true, name: "Post-processing Target Pool " + m_Tracker
 				);
-				//Debug.Log("New RT");
+				Debug.Log("New RT");
 
 				m_Tracker++;
 				return rt;

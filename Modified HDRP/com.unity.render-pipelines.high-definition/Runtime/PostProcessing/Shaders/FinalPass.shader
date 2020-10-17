@@ -86,21 +86,21 @@ Shader "Hidden/HDRP/FinalPass"
             positionNDC = positionNDC * _UVTransform.xy + _UVTransform.zw;
 
             #if defined(BILINEAR) || defined(CATMULL_ROM_4) || defined(LANCZOS)
-            float3 outColor = UpscaledResult(positionNDC.xy);
+            	float3 outColor = UpscaledResult(positionNDC.xy);
             #else
-            float4 inputColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
-            float3 outColor = inputColor.rgb;
+            	float4 inputColor = LOAD_TEXTURE2D_X(_InputTexture, positionSS);
+            	float3 outColor = inputColor.rgb;
             #endif
 
             float outAlpha = LOAD_TEXTURE2D_X(_AlphaTexture, positionSS).x;
 
             #if FXAA
-            RunFXAA(_InputTexture, sampler_LinearClamp, outColor, positionSS, positionNDC);
+            	RunFXAA(_InputTexture, sampler_LinearClamp, outColor, positionSS, positionNDC);
             #endif
 
             // Saturate is only needed for dither or grain to work. Otherwise we don't saturate because output might be HDR
             #if defined(GRAIN) || defined(DITHER)
-            outColor = saturate(outColor);
+           		outColor = saturate(outColor);
             #endif
 
             #if GRAIN
@@ -137,9 +137,9 @@ Shader "Hidden/HDRP/FinalPass"
 
             // Apply AfterPostProcess target
             #if APPLY_AFTER_POST
-            float4 afterPostColor = SAMPLE_TEXTURE2D_X_LOD(_AfterPostProcessTexture, s_point_clamp_sampler, positionNDC.xy * _RTHandleScale.xy, 0);
-            // After post objects are blended according to the method described here: https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch23.html
-            outColor.xyz = afterPostColor.a * outColor.xyz + afterPostColor.xyz;
+	            float4 afterPostColor = SAMPLE_TEXTURE2D_X_LOD(_AfterPostProcessTexture, s_point_clamp_sampler, positionNDC.xy * _RTHandleScale.xy, 0);
+	            // After post objects are blended according to the method described here: https://developer.nvidia.com/gpugems/GPUGems3/gpugems3_ch23.html
+	            outColor.xyz = afterPostColor.a * outColor.xyz + afterPostColor.xyz;
             #endif
 
             return float4(outColor, outAlpha);

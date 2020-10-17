@@ -17,6 +17,7 @@
 #pragma kernel KMain_Variant7 MAIN=KMain_Variant7 VARIANT=7
 
 TEXTURE2D_X(_InputTexture);
+TEXTURE2D_X(_AfterimageTexture);
 TEXTURE2D_X(_BloomTexture);
 TEXTURE2D_X(_BloomHaloTexture);
 TEXTURE2D(_BloomDirtTexture);
@@ -47,6 +48,7 @@ CBUFFER_START(cb0)
     float4 _BloomBicubicParams;
     float4 _LMSRParams;
     float4 _DebugFlags;
+    float4 _AfterimageParams;
 CBUFFER_END
 
 #define DistCenter              _DistortionParams1.xy
@@ -407,6 +409,10 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
     //     // Color lookup in the LogC lut
     //     color = ApplyLut3D(TEXTURE3D_ARGS(_LogLut3D, sampler_LogLut3D), colorLutSpace, _LogLut3D_Params.xy);
     // }
+
+    // Positive afterimage
+    float3 previousColor = SAMPLE_TEXTURE2D_X_LOD(_AfterimageTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uv), 0.0).xyz;
+    color = lerp(color, previousColor, 0.5);
 
     // Done
     _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = color;
