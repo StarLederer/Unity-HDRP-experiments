@@ -1,6 +1,7 @@
 // Copied & modified from ColorPyramid.compute
 
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Common.hlsl"
+#include "Packages/com.unity.render-pipelines.core/ShaderLibrary/Color.hlsl"
 #include "Packages/com.unity.render-pipelines.high-definition/Runtime/ShaderLibrary/ShaderVariables.hlsl"
 
 #pragma only_renderers d3d11 ps4 xboxone vulkan metal switch
@@ -10,7 +11,8 @@
 
 TEXTURE2D_X(_InputTexture);
 
-RW_TEXTURE2D_X(float3, _OutputTexture);
+RW_TEXTURE2D_X(float3, _AfterimageOutput);
+RW_TEXTURE2D_X(float, _SorenessOutput);
 
 SAMPLER(sampler_LinearClamp);
 
@@ -96,7 +98,8 @@ void BlurVertically(uint2 pixelCoord, uint topMostIndex)
     blurred *= all(pixelCoord < uint2(_TexelSize.xy));
 
     // Write to the final target
-    _OutputTexture[COORD_TEXTURE2D_X(pixelCoord)] = blurred;
+    //_AfterimageOutput[COORD_TEXTURE2D_X(pixelCoord)] = blurred;
+    _SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)] = lerp(_SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)], Luminance(blurred), 0.01);
 }
 
 #define GROUP_SIZE 8
@@ -109,21 +112,21 @@ void MAIN(uint2 groupId : SV_GroupID, uint2 groupThreadId : SV_GroupThreadID, ui
     // Upper-left pixel coordinate of quad that this thread will read
     int2 threadUL = (groupThreadId << 1) + (groupId << 3) - 4;
 
-#if DOWNSAMPLE
-    float2 offset = float2(threadUL);
-    float2 maxCoord = 1.0 - 0.5f *_TexelSize.zw;
-    float3 p00 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear((offset                    + 0.5) * _TexelSize.zw, _TexelSize.zw), 0.0).xyz;
-    float3 p10 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear((offset + float2(1.0, 0.0) + 0.5) * _TexelSize.zw, _TexelSize.zw), 0.0).xyz;
-    float3 p01 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear((offset + float2(0.0, 1.0) + 0.5) * _TexelSize.zw, _TexelSize.zw), 0.0).xyz;
-    float3 p11 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear((offset + float2(1.0, 1.0) + 0.5) * _TexelSize.zw, _TexelSize.zw), 0.0).xyz;
-#else
-    uint2 uthreadUL = uint2(max(0, threadUL));
-    uint2 size = uint2(_TexelSize.xy) - 1u;
-    float3 p00 = _InputTexture[COORD_TEXTURE2D_X(min(uthreadUL + uint2(0u, 0u), size))].xyz;
-    float3 p10 = _InputTexture[COORD_TEXTURE2D_X(min(uthreadUL + uint2(1u, 0u), size))].xyz;
-    float3 p11 = _InputTexture[COORD_TEXTURE2D_X(min(uthreadUL + uint2(1u, 1u), size))].xyz;
-    float3 p01 = _InputTexture[COORD_TEXTURE2D_X(min(uthreadUL + uint2(0u, 1u), size))].xyz;
-#endif
+    #if DOWNSAMPLE
+        float2 offset = float2(threadUL);
+        float2 maxCoord = 1.0 - 0.5f *_TexelSize.zw;
+        float3 p00 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear((offset                    + 0.5) * _TexelSize.zw, _TexelSize.zw), 0.0).xyz;
+        float3 p10 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear((offset + float2(1.0, 0.0) + 0.5) * _TexelSize.zw, _TexelSize.zw), 0.0).xyz;
+        float3 p01 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear((offset + float2(0.0, 1.0) + 0.5) * _TexelSize.zw, _TexelSize.zw), 0.0).xyz;
+        float3 p11 = SAMPLE_TEXTURE2D_X_LOD(_InputTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear((offset + float2(1.0, 1.0) + 0.5) * _TexelSize.zw, _TexelSize.zw), 0.0).xyz;
+    #else
+        uint2 uthreadUL = uint2(max(0, threadUL));
+        uint2 size = uint2(_TexelSize.xy) - 1u;
+        float3 p00 = _InputTexture[COORD_TEXTURE2D_X(min(uthreadUL + uint2(0u, 0u), size))].xyz;
+        float3 p10 = _InputTexture[COORD_TEXTURE2D_X(min(uthreadUL + uint2(1u, 0u), size))].xyz;
+        float3 p11 = _InputTexture[COORD_TEXTURE2D_X(min(uthreadUL + uint2(1u, 1u), size))].xyz;
+        float3 p01 = _InputTexture[COORD_TEXTURE2D_X(min(uthreadUL + uint2(0u, 1u), size))].xyz;
+    #endif
 
     // Store the 4 downsampled pixels in LDS
     uint destIdx = groupThreadId.x + (groupThreadId.y << 4u);

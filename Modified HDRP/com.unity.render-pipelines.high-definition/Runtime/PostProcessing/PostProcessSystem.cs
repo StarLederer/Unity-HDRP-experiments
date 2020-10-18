@@ -65,6 +65,7 @@ namespace UnityEngine.Rendering.HighDefinition
 		// CUSTOM
 		// Afterimage data
 		RTHandle m_AfterimageTexure;
+		RTHandle m_SorenessTexure;
 
 		// Prefetched components (updated on every frame)
 		Exposure m_Exposure;
@@ -222,6 +223,11 @@ namespace UnityEngine.Rendering.HighDefinition
 					useMipMap: false, enableRandomWrite: true, useDynamicScale: true, name: "Positive Afterimage"
 				);
 
+			m_SorenessTexure = RTHandles.Alloc(
+					new Vector2(0.125f, 0.125f), TextureXR.slices, DepthBits.None, colorFormat: k_ColorFormat, dimension: TextureXR.dimension,
+					useMipMap: false, enableRandomWrite: true, useDynamicScale: true, name: "Positive Afterimage"
+				);
+
 			// Used to copy the alpha channel of the color buffer if the format is set to fp16
 			m_KeepAlpha = hdAsset.currentPlatformRenderPipelineSettings.keepAlpha;
 			if (m_KeepAlpha)
@@ -244,6 +250,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			RTHandles.Release(m_TempTexture32);
 			RTHandles.Release(m_AlphaTexture);
 			RTHandles.Release(m_AfterimageTexure);
+			RTHandles.Release(m_SorenessTexure);
 			CoreUtils.Destroy(m_ExposureCurveTexture);
 			CoreUtils.Destroy(m_InternalSpectralLut);
 			RTHandles.Release(m_InternalLogLut);
@@ -258,6 +265,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			m_EmptyExposureTexture = null;
 			m_TempTexture1024 = null;
 			m_AfterimageTexure = null;
+			m_SorenessTexure = null;
 			m_TempTexture32 = null;
 			m_AlphaTexture = null;
 			m_ExposureCurveTexture = null;
@@ -584,9 +592,9 @@ namespace UnityEngine.Rendering.HighDefinition
 						}
 
 						// Positive afterimage
-						using (new ProfilingSample(cmd, "Positive Afterimage", CustomSamplerId.CustomPostProcessAfterPP.GetSampler()))
+						using (new ProfilingSample(cmd, "Afterimage", CustomSamplerId.CustomPostProcessAfterPP.GetSampler()))
 						{
-							DoPositiveAfterimage(cmd, camera, source, cs, kernel);
+							DoAfterimage(cmd, cs, kernel);
 						}
 
 						// Setup the rest of the effects
@@ -629,8 +637,7 @@ namespace UnityEngine.Rendering.HighDefinition
 				// Update afterimage
 				var afterimageCS = m_Resources.shaders.AfterimageCS;
 				int afterimageKernel = afterimageCS.FindKernel("KMainDownsample");
-				//Assert.IsNotNull(source);
-				UpdatePositiveAfterimage(cmd, camera, source, afterimageCS, afterimageKernel);
+				UpdateAfterimage(cmd, camera, source, afterimageCS, afterimageKernel);
 
 				if (dynResHandler.DynamicResolutionEnabled() &&     // Dynamic resolution is on.
 					camera.antialiasing == AntialiasingMode.FastApproximateAntialiasing &&
@@ -2310,19 +2317,21 @@ namespace UnityEngine.Rendering.HighDefinition
 		// CUSTOM
 		#region Positive Afterimage
 
-		void DoPositiveAfterimage(CommandBuffer cmd, HDCamera camera, RTHandle source, ComputeShader uberCS, int uberKernel)
+		void DoAfterimage(CommandBuffer cmd, ComputeShader uberCS, int uberKernel)
 		{
 			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_AfterimageParams"), new Vector4(1f, 0f, 0f, 0f));
 			cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_AfterimageTexture"), m_AfterimageTexure);
+			cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_SorenessTexture"), m_SorenessTexure);
 			//Debug.Log(m_AfterimageTexure.GetScaledSize(m_AfterimageTexure.referenceSize));
 		}
 
-		void UpdatePositiveAfterimage(CommandBuffer cmd, HDCamera camera, RTHandle source, ComputeShader cs, int kernel)
+		void UpdateAfterimage(CommandBuffer cmd, HDCamera camera, RTHandle source, ComputeShader cs, int kernel)
 		{
 			var size = new Vector2Int(m_AfterimageTexure.rt.width, m_AfterimageTexure.rt.height);
 
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, source);
-			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, m_AfterimageTexure);
+			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_AfterimageOutput"), m_AfterimageTexure);
+			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_SorenessOutput"), m_SorenessTexure);
 			cmd.SetComputeVectorParam(cs, HDShaderIDs._TexelSize, new Vector4(size.x, size.y, 1f / size.x, 1f / size.y));
 
 			int w = size.x;
