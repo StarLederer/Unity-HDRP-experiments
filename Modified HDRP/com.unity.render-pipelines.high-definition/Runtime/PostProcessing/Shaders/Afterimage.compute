@@ -12,7 +12,7 @@
 TEXTURE2D_X(_InputTexture);
 
 RW_TEXTURE2D_X(float3, _AfterimageOutput);
-RW_TEXTURE2D_X(float, _SorenessOutput);
+RW_TEXTURE2D_X(float3, _SorenessOutput);
 
 SAMPLER(sampler_LinearClamp);
 
@@ -99,7 +99,10 @@ void BlurVertically(uint2 pixelCoord, uint topMostIndex)
 
     // Write to the final target
     //_AfterimageOutput[COORD_TEXTURE2D_X(pixelCoord)] = blurred;
-    _SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)] = lerp(_SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)], Luminance(blurred), 0.01);
+    float3 soreness = _SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)];
+    soreness *= 0.97;
+    soreness += pow(blurred, 19);
+    _SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)] = max(0, soreness);
 }
 
 #define GROUP_SIZE 8
