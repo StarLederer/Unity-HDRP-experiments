@@ -418,7 +418,7 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
 
     // Negative afterimage
     float3 soreness = SAMPLE_TEXTURE2D_X_LOD(_SorenessTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uv), 0.0).xyz;
-    color -= soreness * 0.1;
+    color -= soreness * 0.3;
 
     // Done
     _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = color;
