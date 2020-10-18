@@ -11,7 +11,7 @@
 
 TEXTURE2D_X(_InputTexture);
 
-RW_TEXTURE2D_X(float3, _AfterimageOutput);
+//RW_TEXTURE2D_X(float3, _AfterimageOutput);
 RW_TEXTURE2D_X(float3, _SorenessOutput);
 
 SAMPLER(sampler_LinearClamp);
@@ -97,11 +97,13 @@ void BlurVertically(uint2 pixelCoord, uint topMostIndex)
     // Guard bands
     blurred *= all(pixelCoord < uint2(_TexelSize.xy));
 
-    // Write to the final target
+    // Write positive afterimage
     //_AfterimageOutput[COORD_TEXTURE2D_X(pixelCoord)] = blurred;
+
+    // Write negative afterimage
     float3 soreness = _SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)];
-    soreness *= 0.97;
-    soreness += pow(blurred, 19);
+    soreness -= 0.1 * unity_DeltaTime.x + 0.0001;
+    soreness += pow(blurred, 18) * 0.02;
     _SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)] = max(0, soreness);
 }
 

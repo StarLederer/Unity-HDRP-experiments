@@ -64,7 +64,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 		// CUSTOM
 		// Afterimage data
-		RTHandle m_AfterimageTexure;
+		//RTHandle m_AfterimageTexure;
 		RTHandle m_SorenessTexure;
 
 		// Prefetched components (updated on every frame)
@@ -218,13 +218,13 @@ namespace UnityEngine.Rendering.HighDefinition
 
 			// CUSTOM
 			// Afterimage RT
-			m_AfterimageTexure = RTHandles.Alloc(
-					new Vector2(0.125f, 0.125f), TextureXR.slices, DepthBits.None, colorFormat: k_ColorFormat, dimension: TextureXR.dimension,
-					useMipMap: false, enableRandomWrite: true, useDynamicScale: true, name: "Positive Afterimage"
-				);
+			//m_AfterimageTexure = RTHandles.Alloc(
+			//		Vector2.one, TextureXR.slices, DepthBits.None, colorFormat: k_ColorFormat, dimension: TextureXR.dimension,
+			//		useMipMap: false, enableRandomWrite: true, useDynamicScale: true, name: "Positive Afterimage"
+			//	);
 
 			m_SorenessTexure = RTHandles.Alloc(
-					new Vector2(0.125f, 0.125f), TextureXR.slices, DepthBits.None, colorFormat: k_ColorFormat, dimension: TextureXR.dimension,
+					Vector2.one / 16f, TextureXR.slices, DepthBits.None, colorFormat: k_ColorFormat, dimension: TextureXR.dimension,
 					useMipMap: false, enableRandomWrite: true, useDynamicScale: true, name: "Positive Afterimage"
 				);
 
@@ -249,7 +249,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			RTHandles.Release(m_TempTexture1024);
 			RTHandles.Release(m_TempTexture32);
 			RTHandles.Release(m_AlphaTexture);
-			RTHandles.Release(m_AfterimageTexure);
+			//RTHandles.Release(m_AfterimageTexure);
 			RTHandles.Release(m_SorenessTexure);
 			CoreUtils.Destroy(m_ExposureCurveTexture);
 			CoreUtils.Destroy(m_InternalSpectralLut);
@@ -264,7 +264,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 			m_EmptyExposureTexture = null;
 			m_TempTexture1024 = null;
-			m_AfterimageTexure = null;
+			//m_AfterimageTexure = null;
 			m_SorenessTexure = null;
 			m_TempTexture32 = null;
 			m_AlphaTexture = null;
@@ -2320,17 +2320,18 @@ namespace UnityEngine.Rendering.HighDefinition
 		void DoAfterimage(CommandBuffer cmd, ComputeShader uberCS, int uberKernel)
 		{
 			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_AfterimageParams"), new Vector4(1f, 0f, 0f, 0f));
-			cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_AfterimageTexture"), m_AfterimageTexure);
+			//cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_AfterimageTexture"), m_AfterimageTexure);
 			cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_SorenessTexture"), m_SorenessTexure);
 			//Debug.Log(m_AfterimageTexure.GetScaledSize(m_AfterimageTexure.referenceSize));
 		}
 
 		void UpdateAfterimage(CommandBuffer cmd, HDCamera camera, RTHandle source, ComputeShader cs, int kernel)
 		{
-			var size = new Vector2Int(m_AfterimageTexure.rt.width, m_AfterimageTexure.rt.height);
+			var size = new Vector2Int(m_SorenessTexure.rt.width, m_SorenessTexure.rt.height);
 
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, source);
-			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_AfterimageOutput"), m_AfterimageTexure);
+			cmd.SetComputeVectorParam(cs, HDShaderIDs.unity_DeltaTime, new Vector4(Time.deltaTime, 0f, 0f, 0f));
+			//cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_AfterimageOutput"), m_AfterimageTexure);
 			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_SorenessOutput"), m_SorenessTexure);
 			cmd.SetComputeVectorParam(cs, HDShaderIDs._TexelSize, new Vector4(size.x, size.y, 1f / size.x, 1f / size.y));
 

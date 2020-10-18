@@ -16,6 +16,7 @@
 #pragma kernel KMain_Variant6 MAIN=KMain_Variant6 VARIANT=6
 #pragma kernel KMain_Variant7 MAIN=KMain_Variant7 VARIANT=7
 
+// TODO in a future project: Implement dithered rendering and positive afterimage for physically based motion blur
 TEXTURE2D_X(_InputTexture);
 //TEXTURE2D_X(_AfterimageTexture);
 TEXTURE2D_X(_SorenessTexture);
@@ -413,12 +414,11 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
 
     // Positive afterimage
     //float3 previousColor = SAMPLE_TEXTURE2D_X_LOD(_AfterimageTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uv), 0.0).xyz;
-    //color = lerp(color, previousColor, 0.5);
+    //color += previousColor * 0.1;
 
     // Negative afterimage
     float3 soreness = SAMPLE_TEXTURE2D_X_LOD(_SorenessTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uv), 0.0).xyz;
-    soreness = soreness;
-    color = color - soreness * 0.2;
+    color -= soreness * 0.1;
 
     // Done
     _OutputTexture[COORD_TEXTURE2D_X(posInputs.positionSS)] = color;

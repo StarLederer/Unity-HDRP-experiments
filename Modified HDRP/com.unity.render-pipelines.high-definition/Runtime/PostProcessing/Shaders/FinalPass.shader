@@ -92,6 +92,9 @@ Shader "Hidden/HDRP/FinalPass"
             	float3 outColor = inputColor.rgb;
             #endif
 
+            // CUSTOM: Moved tonemapping from the uber shader to here
+            //outColor = AcesTonemap(unity_to_ACES(outColor));
+
             float outAlpha = LOAD_TEXTURE2D_X(_AlphaTexture, positionSS).x;
 
             #if FXAA
