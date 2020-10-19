@@ -78,6 +78,7 @@ namespace UnityEngine.Rendering.HighDefinition
 		Vignette m_Vignette;
 		Tonemapping m_Tonemapping;
 		LMSR m_LMSR;
+		Afterimage m_Afterimage;
 		WhiteBalance m_WhiteBalance;
 		ColorAdjustments m_ColorAdjustments;
 		ChannelMixer m_ChannelMixer;
@@ -326,6 +327,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			m_Vignette = stack.GetComponent<Vignette>();
 			m_Tonemapping = stack.GetComponent<Tonemapping>();
 			m_LMSR = stack.GetComponent<LMSR>();
+			m_Afterimage = stack.GetComponent<Afterimage>();
 			m_WhiteBalance = stack.GetComponent<WhiteBalance>();
 			m_ColorAdjustments = stack.GetComponent<ColorAdjustments>();
 			m_ChannelMixer = stack.GetComponent<ChannelMixer>();
@@ -2319,7 +2321,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 		void DoAfterimage(CommandBuffer cmd, ComputeShader uberCS, int uberKernel)
 		{
-			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_AfterimageParams"), new Vector4(1f, 0f, 0f, 0f));
+			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_AfterimageParams"), new Vector4(m_Afterimage.intensity.value, m_Afterimage.tiringPower.value, m_Afterimage.healingPower.value, 0f));
 			//cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_AfterimageTexture"), m_AfterimageTexure);
 			cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_SorenessTexture"), m_SorenessTexure);
 			//Debug.Log(m_AfterimageTexure.GetScaledSize(m_AfterimageTexure.referenceSize));
@@ -2331,6 +2333,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, source);
 			cmd.SetComputeVectorParam(cs, HDShaderIDs.unity_DeltaTime, new Vector4(Time.deltaTime, 0f, 0f, 0f));
+			cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_AfterimageParams"), new Vector4(m_Afterimage.intensity.value, m_Afterimage.tiringPower.value, m_Afterimage.healingPower.value, 0f));
 			//cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_AfterimageOutput"), m_AfterimageTexure);
 			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_SorenessOutput"), m_SorenessTexure);
 			cmd.SetComputeVectorParam(cs, HDShaderIDs._TexelSize, new Vector4(size.x, size.y, 1f / size.x, 1f / size.y));

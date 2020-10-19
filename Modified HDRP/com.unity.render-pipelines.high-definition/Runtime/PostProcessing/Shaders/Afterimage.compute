@@ -17,6 +17,7 @@ RW_TEXTURE2D_X(float3, _SorenessOutput);
 SAMPLER(sampler_LinearClamp);
 
 CBUFFER_START(cb0)
+    float4 _AfterimageParams;
     float4 _TexelSize;       // xy: size, zw: texel size
 CBUFFER_END
 
@@ -102,8 +103,8 @@ void BlurVertically(uint2 pixelCoord, uint topMostIndex)
 
     // Write negative afterimage
     float3 soreness = _SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)];
-    soreness -= 0.1 * unity_DeltaTime.x + 0.0001;
-    soreness += pow(blurred, 18) * 0.02;
+    soreness -= _AfterimageParams.z * unity_DeltaTime.x + 0.0001;
+    soreness += pow(blurred, 18) * _AfterimageParams.y;
     _SorenessOutput[COORD_TEXTURE2D_X(pixelCoord)] = max(0, soreness);
 }
 
