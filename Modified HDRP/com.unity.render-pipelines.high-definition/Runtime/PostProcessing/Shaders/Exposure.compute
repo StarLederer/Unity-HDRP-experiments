@@ -17,6 +17,7 @@ TEXTURE2D(_InputTexture);
 TEXTURE2D_X(_SourceTexture);
 
 RW_TEXTURE2D(float2, _OutputTexture);
+RW_TEXTURE2D(float, _EyeLightOutput);
 
 SAMPLER(sampler_LinearClamp);
 
@@ -99,7 +100,7 @@ float AdaptExposure(float exposure)
 [numthreads(1,1,1)]
 void KFixedExposure(uint2 dispatchThreadId : SV_DispatchThreadID)
 {
-    _OutputTexture[dispatchThreadId] = float2(ConvertEV100ToExposure(ParamEV100), ParamEV100); // <- this one
+    _OutputTexture[dispatchThreadId] = float2(ConvertEV100ToExposure(ParamEV100), ParamEV100);
 }
 
 //
@@ -216,6 +217,8 @@ void KReduction(uint2 groupId : SV_GroupID, uint2 groupThreadId : SV_GroupThread
                 float exposure = AdaptExposure(avgLuminance - ParamExposureCompensation);
                 exposure = clamp(exposure, ParamExposureLimitMin, ParamExposureLimitMax);
                 _OutputTexture[groupId.xy] = float2(ConvertEV100ToExposure(exposure), exposure);
+                // CUSTOM: Outputting the same thing but to another texture for eyelids
+                _EyeLightOutput[groupId.xy] = avgLuminance;
                 break;
             }
             case 2u:

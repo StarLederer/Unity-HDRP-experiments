@@ -16,10 +16,11 @@
 #pragma kernel KMain_Variant6 MAIN=KMain_Variant6 VARIANT=6
 #pragma kernel KMain_Variant7 MAIN=KMain_Variant7 VARIANT=7
 
-// TODO in a future project: Implement dithered rendering and positive afterimage for physically based motion blur
+// CUSTOM TODO in a future project: Implement dithered rendering and positive afterimage for physically based motion blur
 TEXTURE2D_X(_InputTexture);
 //TEXTURE2D_X(_AfterimageTexture);
 TEXTURE2D_X(_SorenessTexture);
+TEXTURE2D(_EyeLightTexture);
 TEXTURE2D_X(_BloomTexture);
 TEXTURE2D_X(_BloomHaloTexture);
 TEXTURE2D(_BloomDirtTexture);
@@ -36,6 +37,7 @@ SAMPLER(sampler_VignetteMask);
 
 CBUFFER_START(cb0)
     float4 _ChromaParams;
+    float4 _EyelidParams;
     float4 _VignetteParams1;
     float4 _VignetteParams2;
     float4 _VignetteColor;
@@ -279,6 +281,8 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
         }
     }
 
+    // CUSTOM NOTE: Humans don't really have vignette do they?
+    // Should I remove this and just use eyelids instead? 
     // Vignette
     if (VARIANT & UBERPOSTFEATUREFLAGS_VIGNETTE)
     {
@@ -299,6 +303,17 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
             color = lerp(color, newColor, VignetteOpacity);
         }
     }
+
+    // CUSTOM: Eyelids
+    float eyeLight = SAMPLE_TEXTURE2D_X_LOD(_EyeLightTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uv), 0.0).x;
+    float2 eyelidParams = float2(_EyelidParams.x, 1);
+    eyelidParams.x *= smoothstep(13.5, 16, eyeLight);
+    eyelidParams.y = lerp(1, _EyelidParams.y, smoothstep(13.5, 16, eyeLight));
+
+    const float fade = 0.1;
+    color *= smoothstep(eyelidParams.x, eyelidParams.x + fade, uv.y);
+    color *= 1 - smoothstep(1 - eyelidParams.x - fade, 1 - eyelidParams.x, uv.y);
+    color *= eyelidParams.y;
 
 
     // CUSTOM: Added this effect

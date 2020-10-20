@@ -66,6 +66,7 @@ namespace UnityEngine.Rendering.HighDefinition
 		// Afterimage data
 		//RTHandle m_AfterimageTexure;
 		RTHandle m_SorenessTexure;
+		RTHandle m_EyeLightTexture;
 
 		// Prefetched components (updated on every frame)
 		Exposure m_Exposure;
@@ -229,6 +230,11 @@ namespace UnityEngine.Rendering.HighDefinition
 					useMipMap: false, enableRandomWrite: true, useDynamicScale: true, name: "Positive Afterimage"
 				);
 
+			m_EyeLightTexture = RTHandles.Alloc(
+					width: 1, height: 1, TextureXR.slices, DepthBits.None, colorFormat: k_ColorFormat, dimension: TextureDimension.Tex2D,
+					useMipMap: false, enableRandomWrite: true, useDynamicScale: true, name: "Eye Light Texture"
+				);
+
 			// Used to copy the alpha channel of the color buffer if the format is set to fp16
 			m_KeepAlpha = hdAsset.currentPlatformRenderPipelineSettings.keepAlpha;
 			if (m_KeepAlpha)
@@ -251,6 +257,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			RTHandles.Release(m_TempTexture32);
 			RTHandles.Release(m_AlphaTexture);
 			//RTHandles.Release(m_AfterimageTexure);
+			RTHandles.Release(m_EyeLightTexture);
 			RTHandles.Release(m_SorenessTexure);
 			CoreUtils.Destroy(m_ExposureCurveTexture);
 			CoreUtils.Destroy(m_InternalSpectralLut);
@@ -266,6 +273,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			m_EmptyExposureTexture = null;
 			m_TempTexture1024 = null;
 			//m_AfterimageTexure = null;
+			m_EyeLightTexture = null;
 			m_SorenessTexure = null;
 			m_TempTexture32 = null;
 			m_AlphaTexture = null;
@@ -565,6 +573,9 @@ namespace UnityEngine.Rendering.HighDefinition
 						var featureFlags = GetUberFeatureFlags(isSceneView);
 						int kernel = GetUberKernel(cs, featureFlags);
 
+						// Eyelids
+						DoEyelids(cmd, cs, kernel);
+
 						// Generate the bloom texture
 						bool bloomActive = m_Bloom.IsActive() && m_BloomFS;
 
@@ -766,13 +777,11 @@ namespace UnityEngine.Rendering.HighDefinition
 				kernel = cs.FindKernel("KFixedExposure");
 				cmd.SetComputeVectorParam(cs, HDShaderIDs._ExposureParams, new Vector4(m_Exposure.fixedExposure.value, 0f, 0f, 0f));
 			}
-			// CUSTOM: We are trying to emulate human eye, so there is no need
-			// to use Physical camera parameters
-			//else if (m_Exposure.mode == ExposureMode.UsePhysicalCamera)
-			//{
-			//	kernel = cs.FindKernel("KManualCameraExposure");
-			//	cmd.SetComputeVectorParam(cs, HDShaderIDs._ExposureParams, new Vector4(m_Exposure.compensation.value, m_PhysicalCamera.aperture, m_PhysicalCamera.shutterSpeed, m_PhysicalCamera.iso));
-			//}
+			else if (m_Exposure.mode == ExposureMode.UsePhysicalCamera)
+			{
+				kernel = cs.FindKernel("KManualCameraExposure");
+				cmd.SetComputeVectorParam(cs, HDShaderIDs._ExposureParams, new Vector4(m_Exposure.compensation.value, m_PhysicalCamera.aperture, m_PhysicalCamera.shutterSpeed, m_PhysicalCamera.iso));
+			}
 
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, prevExposure);
 			cmd.DispatchCompute(cs, kernel, 1, 1, 1);
@@ -878,6 +887,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._ExposureCurveTexture, Texture2D.blackTexture);
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, m_TempTexture1024);
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, m_TempTexture32);
+			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_EyeLightOutput"), m_EyeLightTexture);
 			cmd.DispatchCompute(cs, kernel, 32, 32, 1);
 
 			// Reduction: 2nd pass (32 -> 1) + evaluate exposure
@@ -899,6 +909,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._PreviousExposureTexture, prevExposure);
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._InputTexture, m_TempTexture32);
 			cmd.SetComputeTextureParam(cs, kernel, HDShaderIDs._OutputTexture, nextExposure);
+			cmd.SetComputeTextureParam(cs, kernel, Shader.PropertyToID("_EyeLightOutput"), m_EyeLightTexture);
 			cmd.DispatchCompute(cs, kernel, 1, 1, 1);
 		}
 
@@ -1680,6 +1691,21 @@ namespace UnityEngine.Rendering.HighDefinition
 
 		#endregion
 
+		//CUSTOM
+		#region Eyelids
+
+		void DoEyelids(CommandBuffer cmd, ComputeShader uberCS, int uberKernel)
+		{
+			var sineNoise = (Mathf.Sin(Time.time * 32) + Mathf.Sin(Time.time * 70f) + Mathf.Sin(Time.time * 130f)) / 3f;
+			var maxSquealMin = 0.194f;
+			var maxSquealMax = 0.2f;
+			var maxSqueal = maxSquealMin + sineNoise * (maxSquealMax - maxSquealMin);
+			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_EyelidParams"), new Vector4(maxSqueal, 0.2f, 0f, 0f));
+			cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_EyeLightTexture"), m_EyeLightTexture);
+		}
+
+		#endregion
+
 		#region Panini Projection
 
 		// Back-ported & adapted from the work of the Stockholm demo team - thanks Lasse!
@@ -1756,6 +1782,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 		#endregion
 
+		// CUSTOM: Added lenticular haloes
 		#region Bloom
 
 		// TODO: All of this could be simplified and made faster once we have the ability to bind mips as SRV
