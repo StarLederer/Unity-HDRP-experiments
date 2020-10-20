@@ -217,7 +217,7 @@ void KReduction(uint2 groupId : SV_GroupID, uint2 groupThreadId : SV_GroupThread
                 float exposure = AdaptExposure(avgLuminance - ParamExposureCompensation);
                 exposure = clamp(exposure, ParamExposureLimitMin, ParamExposureLimitMax);
                 _OutputTexture[groupId.xy] = float2(ConvertEV100ToExposure(exposure), exposure);
-                // CUSTOM: Outputting the same thing but to another texture for eyelids
+                // CUSTOM: Outputting the brightness for eyelids
                 _EyeLightOutput[groupId.xy] = avgLuminance;
                 break;
             }

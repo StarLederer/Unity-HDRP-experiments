@@ -5,7 +5,7 @@ namespace UnityEngine.Rendering.HighDefinition
     /// <summary>
     /// A volume component that holds settings for the Tonemapping effect.
     /// </summary>
-    [Serializable, VolumeComponentMenu("Post-processing/LMSR")]
+    [Serializable, VolumeComponentMenu("Human Eye/LMSR")]
     public sealed class LMSR : VolumeComponent, IPostProcessComponent
     {
         public ClampedFloatParameter edge1 = new ClampedFloatParameter(0f, 0f, 1f);

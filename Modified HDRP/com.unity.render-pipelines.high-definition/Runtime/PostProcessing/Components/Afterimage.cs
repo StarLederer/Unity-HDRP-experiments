@@ -5,7 +5,7 @@ namespace UnityEngine.Rendering.HighDefinition
     /// <summary>
     /// A volume component that holds settings for the Tonemapping effect.
     /// </summary>
-    [Serializable, VolumeComponentMenu("Post-processing/Afterimage")]
+    [Serializable, VolumeComponentMenu("Human Eye/Afterimage")]
     public sealed class Afterimage : VolumeComponent, IPostProcessComponent
     {
         public ClampedFloatParameter intensity = new ClampedFloatParameter(0f, 0f, 1f);

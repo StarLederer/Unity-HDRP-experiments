@@ -37,7 +37,8 @@ SAMPLER(sampler_VignetteMask);
 
 CBUFFER_START(cb0)
     float4 _ChromaParams;
-    float4 _EyelidParams;
+    float4 _EyelidParams1;
+    float4 _EyelidParams2;
     float4 _VignetteParams1;
     float4 _VignetteParams2;
     float4 _VignetteColor;
@@ -305,15 +306,21 @@ void MAIN(uint3 dispatchThreadId : SV_DispatchThreadID)
     }
 
     // CUSTOM: Eyelids
-    float eyeLight = SAMPLE_TEXTURE2D_X_LOD(_EyeLightTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uv), 0.0).x;
-    float2 eyelidParams = float2(_EyelidParams.x, 1);
-    eyelidParams.x *= smoothstep(13.5, 16, eyeLight);
-    eyelidParams.y = lerp(1, _EyelidParams.y, smoothstep(13.5, 16, eyeLight));
+    if (_EyelidParams2.z > 0)
+    {
+        float fade = _EyelidParams2.y;
 
-    const float fade = 0.1;
-    color *= smoothstep(eyelidParams.x, eyelidParams.x + fade, uv.y);
-    color *= 1 - smoothstep(1 - eyelidParams.x - fade, 1 - eyelidParams.x, uv.y);
-    color *= eyelidParams.y;
+        float eyeLight = SAMPLE_TEXTURE2D_X_LOD(_EyeLightTexture, sampler_LinearClamp, ClampAndScaleUVForBilinear(uv), 0.0).x;
+        float squint = (_EyelidParams1.x + fade) * smoothstep(_EyelidParams1.z, _EyelidParams1.w, eyeLight);
+        float darken = lerp(1, _EyelidParams1.y, smoothstep(_EyelidParams1.z, _EyelidParams1.w, eyeLight));
+
+        squint = lerp(squint, 0.5, _EyelidParams2.x);
+        darken = lerp(darken, 0, _EyelidParams2.x);
+
+        color *= smoothstep(squint, squint + fade, uv.y + fade);
+        color *= 1 - smoothstep(1 - squint - fade, 1 - squint, uv.y-fade);
+        color *= darken;
+    }
 
 
     // CUSTOM: Added this effect

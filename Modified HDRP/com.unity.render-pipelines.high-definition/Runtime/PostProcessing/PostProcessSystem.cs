@@ -70,6 +70,7 @@ namespace UnityEngine.Rendering.HighDefinition
 
 		// Prefetched components (updated on every frame)
 		Exposure m_Exposure;
+		Eyelids m_Eyelids;
 		DepthOfField m_DepthOfField;
 		MotionBlur m_MotionBlur;
 		PaniniProjection m_PaniniProjection;
@@ -326,6 +327,7 @@ namespace UnityEngine.Rendering.HighDefinition
 			// be needed in multiple places
 			var stack = VolumeManager.instance.stack;
 			m_Exposure = stack.GetComponent<Exposure>();
+			m_Eyelids = stack.GetComponent<Eyelids>();
 			m_DepthOfField = stack.GetComponent<DepthOfField>();
 			m_MotionBlur = stack.GetComponent<MotionBlur>();
 			m_PaniniProjection = stack.GetComponent<PaniniProjection>();
@@ -1697,10 +1699,12 @@ namespace UnityEngine.Rendering.HighDefinition
 		void DoEyelids(CommandBuffer cmd, ComputeShader uberCS, int uberKernel)
 		{
 			var sineNoise = (Mathf.Sin(Time.time * 32) + Mathf.Sin(Time.time * 70f) + Mathf.Sin(Time.time * 130f)) / 3f;
-			var maxSquealMin = 0.194f;
-			var maxSquealMax = 0.2f;
-			var maxSqueal = maxSquealMin + sineNoise * (maxSquealMax - maxSquealMin);
-			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_EyelidParams"), new Vector4(maxSqueal, 0.2f, 0f, 0f));
+			var maxSquintMin = m_Eyelids.maxSquintMin.value;
+			var maxSquintMax = m_Eyelids.maxSquintMax.value;
+			var maxSquint = Mathf.Lerp(maxSquintMin, maxSquintMax, sineNoise);
+
+			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_EyelidParams1"), new Vector4(maxSquint, 1f - m_Eyelids.maxDarken.value, m_Eyelids.brightnessOpen.value, m_Eyelids.brightnessClosed.value));
+			cmd.SetComputeVectorParam(uberCS, Shader.PropertyToID("_EyelidParams2"), new Vector4(m_Eyelids.forceClose.value, 1f - m_Eyelids.focus.value, m_Eyelids.enable.value ? 1f : 0f, 0f));
 			cmd.SetComputeTextureParam(uberCS, uberKernel, Shader.PropertyToID("_EyeLightTexture"), m_EyeLightTexture);
 		}
 
