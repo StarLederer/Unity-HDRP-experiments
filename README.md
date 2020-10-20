@@ -3,10 +3,11 @@ This repository is my playground for learning graphics programming.
 At the moment it contains 2 Unity packages, modified HDRP and Dynamic Grass.
 ## Modified HDRP
 List of changes to the HDRP:
-1) Better bloom *insert some gifs here*
-2) Volumetric rainbows *insert some gifs here*
-3) Purkinje effect *insert some gifs here*
-4) Negative afterimage *insert some gifs here*
+1) Better bloom
+2) Volumetric rainbows
+3) Purkinje effect
+4) Negative afterimage
+5) Eyelids and squinting
 ## Dynamic Grass
 Renders grass. *insert some gifs here*
 
