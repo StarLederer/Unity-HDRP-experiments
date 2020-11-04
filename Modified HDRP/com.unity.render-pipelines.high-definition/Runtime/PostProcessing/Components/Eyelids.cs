@@ -17,7 +17,7 @@ namespace UnityEngine.Rendering.HighDefinition
         public ClampedFloatParameter brightnessClosed = new ClampedFloatParameter(16f, 0f, 30f);
 
         [Header("Effects")]
-        public ClampedFloatParameter maxDarken = new ClampedFloatParameter(0.8f, 00f, 1f);
+        public ClampedFloatParameter maxDarken = new ClampedFloatParameter(0.8f, 0f, 1f);
         public ClampedFloatParameter focus = new ClampedFloatParameter(0.9f, 0.5f, 1f);
 
         [Header("Overrides")]
